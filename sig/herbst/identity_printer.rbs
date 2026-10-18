@@ -1,0 +1,206 @@
+# Generated from lib/herbst/identity_printer.rb with RBS::Inline
+
+module Herbst
+  class IdentityPrinter < Herb::Visitor
+    interface _ERBTag
+      def tag_opening: () -> Herb::Token?
+
+      def content: () -> Herb::Token?
+
+      def tag_closing: () -> Herb::Token?
+    end
+
+    interface _Delimited
+      def tag_opening: () -> Herb::Token?
+
+      def children: () -> Array[Herb::AST::Node]
+
+      def tag_closing: () -> Herb::Token?
+    end
+
+    @line_offsets: Array[Integer]?
+
+    @output: String
+
+    @source: String?
+
+    # : (Herb::AST::Node, ?source: String?) -> String
+    def self.print: (Herb::AST::Node, ?source: String?) -> String
+
+    # : (?source: String?) -> void
+    def initialize: (?source: String?) -> void
+
+    # : (Herb::AST::Node) -> String
+    def print: (Herb::AST::Node) -> String
+
+    # : (Herb::AST::DocumentNode) -> void
+    def visit_document_node: (Herb::AST::DocumentNode) -> void
+
+    # : (Herb::AST::LiteralNode) -> void
+    def visit_literal_node: (Herb::AST::LiteralNode) -> void
+
+    # : (Herb::AST::HTMLTextNode) -> void
+    def visit_html_text_node: (Herb::AST::HTMLTextNode) -> void
+
+    # : (Herb::AST::WhitespaceNode) -> void
+    def visit_whitespace_node: (Herb::AST::WhitespaceNode) -> void
+
+    # : (Herb::AST::HTMLOpenTagNode) -> void
+    def visit_html_open_tag_node: (Herb::AST::HTMLOpenTagNode) -> void
+
+    # : (Herb::AST::HTMLConditionalOpenTagNode) -> void
+    def visit_html_conditional_open_tag_node: (Herb::AST::HTMLConditionalOpenTagNode) -> void
+
+    # : (Herb::AST::HTMLCloseTagNode) -> void
+    def visit_html_close_tag_node: (Herb::AST::HTMLCloseTagNode) -> void
+
+    # : (Herb::AST::HTMLOmittedCloseTagNode) -> void
+    def visit_html_omitted_close_tag_node: (Herb::AST::HTMLOmittedCloseTagNode) -> void
+
+    # : (Herb::AST::HTMLVirtualCloseTagNode) -> void
+    def visit_html_virtual_close_tag_node: (Herb::AST::HTMLVirtualCloseTagNode) -> void
+
+    # : (Herb::AST::HTMLElementNode) -> void
+    def visit_html_element_node: (Herb::AST::HTMLElementNode) -> void
+
+    # : (Herb::AST::HTMLConditionalElementNode) -> void
+    def visit_html_conditional_element_node: (Herb::AST::HTMLConditionalElementNode) -> void
+
+    # : (Herb::AST::HTMLAttributeNode) -> void
+    def visit_html_attribute_node: (Herb::AST::HTMLAttributeNode) -> void
+
+    # : (Herb::AST::HTMLAttributeNameNode) -> void
+    def visit_html_attribute_name_node: (Herb::AST::HTMLAttributeNameNode) -> void
+
+    # : (Herb::AST::HTMLAttributeValueNode) -> void
+    def visit_html_attribute_value_node: (Herb::AST::HTMLAttributeValueNode) -> void
+
+    # : (Herb::AST::RubyLiteralNode) -> void
+    def visit_ruby_literal_node: (Herb::AST::RubyLiteralNode) -> void
+
+    # : (Herb::AST::RubyHTMLAttributesSplatNode) -> void
+    def visit_ruby_html_attributes_splat_node: (Herb::AST::RubyHTMLAttributesSplatNode) -> void
+
+    # : (Herb::AST::HTMLCommentNode) -> void
+    def visit_html_comment_node: (Herb::AST::HTMLCommentNode) -> void
+
+    # : (Herb::AST::HTMLDoctypeNode) -> void
+    def visit_html_doctype_node: (Herb::AST::HTMLDoctypeNode) -> void
+
+    # : (Herb::AST::XMLDeclarationNode) -> void
+    def visit_xml_declaration_node: (Herb::AST::XMLDeclarationNode) -> void
+
+    # : (Herb::AST::CDATANode) -> void
+    def visit_cdata_node: (Herb::AST::CDATANode) -> void
+
+    # : (Herb::AST::XMLProcessingInstructionNode) -> void
+    def visit_xml_processing_instruction_node: (Herb::AST::XMLProcessingInstructionNode) -> void
+
+    # : (Herb::AST::ERBOpenTagNode) -> void
+    def visit_erb_open_tag_node: (Herb::AST::ERBOpenTagNode) -> void
+
+    # : (Herb::AST::ERBContentNode) -> void
+    def visit_erb_content_node: (Herb::AST::ERBContentNode) -> void
+
+    # : (Herb::AST::ERBCommentNode) -> void
+    def visit_erb_comment_node: (Herb::AST::ERBCommentNode) -> void
+
+    # : (Herb::AST::ERBIfNode) -> void
+    def visit_erb_if_node: (Herb::AST::ERBIfNode) -> void
+
+    # : (Herb::AST::ERBElseNode) -> void
+    def visit_erb_else_node: (Herb::AST::ERBElseNode) -> void
+
+    # : (Herb::AST::ERBEndNode) -> void
+    def visit_erb_end_node: (Herb::AST::ERBEndNode) -> void
+
+    # : (Herb::AST::ERBBlockNode) -> void
+    def visit_erb_block_node: (Herb::AST::ERBBlockNode) -> void
+
+    # : (Herb::AST::ERBIterationBlockNode) -> void
+    def visit_erb_iteration_block_node: (Herb::AST::ERBIterationBlockNode) -> void
+
+    # : (Herb::AST::ERBCaseNode) -> void
+    def visit_erb_case_node: (Herb::AST::ERBCaseNode) -> void
+
+    # : (Herb::AST::ERBWhenNode) -> void
+    def visit_erb_when_node: (Herb::AST::ERBWhenNode) -> void
+
+    # : (Herb::AST::ERBWhileNode) -> void
+    def visit_erb_while_node: (Herb::AST::ERBWhileNode) -> void
+
+    # : (Herb::AST::ERBUntilNode) -> void
+    def visit_erb_until_node: (Herb::AST::ERBUntilNode) -> void
+
+    # : (Herb::AST::ERBForNode) -> void
+    def visit_erb_for_node: (Herb::AST::ERBForNode) -> void
+
+    # : (Herb::AST::ERBBeginNode) -> void
+    def visit_erb_begin_node: (Herb::AST::ERBBeginNode) -> void
+
+    # : (Herb::AST::ERBRescueNode) -> void
+    def visit_erb_rescue_node: (Herb::AST::ERBRescueNode) -> void
+
+    # : (Herb::AST::ERBEnsureNode) -> void
+    def visit_erb_ensure_node: (Herb::AST::ERBEnsureNode) -> void
+
+    # : (Herb::AST::ERBUnlessNode) -> void
+    def visit_erb_unless_node: (Herb::AST::ERBUnlessNode) -> void
+
+    # : (Herb::AST::ERBRenderNode) -> void
+    def visit_erb_render_node: (Herb::AST::ERBRenderNode) -> void
+
+    # : (Herb::AST::RubyRenderKeywordsNode) -> void
+    def visit_ruby_render_keywords_node: (Herb::AST::RubyRenderKeywordsNode) -> void
+
+    # : (Herb::AST::RubyRenderLocalNode) -> void
+    def visit_ruby_render_local_node: (Herb::AST::RubyRenderLocalNode) -> void
+
+    # : (Herb::AST::ERBStrictLocalsNode) -> void
+    def visit_erb_strict_locals_node: (Herb::AST::ERBStrictLocalsNode) -> void
+
+    # : (Herb::AST::HerbDirectiveNode) -> void
+    def visit_herb_directive_node: (Herb::AST::HerbDirectiveNode) -> void
+
+    # : (Herb::AST::HerbStateDirectiveNode) -> void
+    def visit_herb_state_directive_node: (Herb::AST::HerbStateDirectiveNode) -> void
+
+    # : (Herb::AST::HerbStateDeclarationNode) -> void
+    def visit_herb_state_declaration_node: (Herb::AST::HerbStateDeclarationNode) -> void
+
+    # : (Herb::AST::RubyParameterNode) -> void
+    def visit_ruby_parameter_node: (Herb::AST::RubyParameterNode) -> void
+
+    # : (Herb::AST::ERBYieldNode) -> void
+    def visit_erb_yield_node: (Herb::AST::ERBYieldNode) -> void
+
+    # : (Herb::AST::ERBInNode) -> void
+    def visit_erb_in_node: (Herb::AST::ERBInNode) -> void
+
+    # : (Herb::AST::ERBCaseMatchNode) -> void
+    def visit_erb_case_match_node: (Herb::AST::ERBCaseMatchNode) -> void
+
+    private
+
+    # : (String?) -> void
+    def write: (String?) -> void
+
+    # : () -> bool
+    def ends_with_whitespace?: () -> bool
+
+    # : (_ERBTag) -> void
+    def print_erb: (_ERBTag) -> void
+
+    # : (_Delimited) -> void
+    def print_delimited: (_Delimited) -> void
+
+    # : (Herb::Position, Herb::Position) -> String
+    def separator_between: (Herb::Position, Herb::Position) -> String
+
+    # : (String, Herb::Position, Herb::Position) -> String?
+    def slice_between: (String, Herb::Position, Herb::Position) -> String?
+
+    # : (String, Herb::Position) -> Integer?
+    def offset: (String, Herb::Position) -> Integer?
+  end
+end

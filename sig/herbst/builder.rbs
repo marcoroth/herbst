@@ -1,0 +1,110 @@
+# Generated from lib/herbst/builder.rb with RBS::Inline
+
+module Herbst
+  module Builder
+    # : (String, String) -> Herb::Token
+    def token: (String, String) -> Herb::Token
+
+    # : (Array[Herb::AST::Node]) -> Herb::AST::DocumentNode
+    def document: (Array[Herb::AST::Node]) -> Herb::AST::DocumentNode
+
+    # : (String) -> Herb::AST::HTMLTextNode
+    def text: (String) -> Herb::AST::HTMLTextNode
+
+    # : (String) -> Herb::AST::LiteralNode
+    def literal: (String) -> Herb::AST::LiteralNode
+
+    # : (?String) -> Herb::AST::WhitespaceNode
+    def whitespace: (?String) -> Herb::AST::WhitespaceNode
+
+    # : (String, ?opening: String) -> (Herb::AST::ERBContentNode | Herb::AST::ERBYieldNode)
+    def erb: (String, ?opening: String) -> (Herb::AST::ERBContentNode | Herb::AST::ERBYieldNode)
+
+    # : (String) -> bool
+    def yield?: (String) -> bool
+
+    # : (String) -> Herb::AST::ERBCommentNode
+    def erb_comment: (String) -> Herb::AST::ERBCommentNode
+
+    # : () -> Herb::AST::ERBEndNode
+    def erb_end: () -> Herb::AST::ERBEndNode
+
+    # : (String, Array[Herb::AST::Node], ?subsequent: (Herb::AST::ERBIfNode | Herb::AST::ERBElseNode)?, ?end_node: Herb::AST::ERBEndNode?) -> Herb::AST::ERBIfNode
+    def erb_if: (String, Array[Herb::AST::Node], ?subsequent: (Herb::AST::ERBIfNode | Herb::AST::ERBElseNode)?, ?end_node: Herb::AST::ERBEndNode?) -> Herb::AST::ERBIfNode
+
+    # : (String, Array[Herb::AST::Node], ?else_clause: Herb::AST::ERBElseNode?) -> Herb::AST::ERBUnlessNode
+    def erb_unless: (String, Array[Herb::AST::Node], ?else_clause: Herb::AST::ERBElseNode?) -> Herb::AST::ERBUnlessNode
+
+    # : (Array[Herb::AST::Node]) -> Herb::AST::ERBElseNode
+    def erb_else: (Array[Herb::AST::Node]) -> Herb::AST::ERBElseNode
+
+    # : (String, Array[Herb::AST::ERBWhenNode], ?else_clause: Herb::AST::ERBElseNode?) -> Herb::AST::ERBCaseNode
+    def erb_case: (String, Array[Herb::AST::ERBWhenNode], ?else_clause: Herb::AST::ERBElseNode?) -> Herb::AST::ERBCaseNode
+
+    # : (String, Array[Herb::AST::Node]) -> Herb::AST::ERBWhenNode
+    def erb_when: (String, Array[Herb::AST::Node]) -> Herb::AST::ERBWhenNode
+
+    # : (String, Array[Herb::AST::Node], ?rescue_clause: Herb::AST::ERBRescueNode?, ?else_clause: Herb::AST::ERBElseNode?, ?ensure_clause: Herb::AST::ERBEnsureNode?) -> Herb::AST::ERBBeginNode
+    def erb_begin: (String, Array[Herb::AST::Node], ?rescue_clause: Herb::AST::ERBRescueNode?, ?else_clause: Herb::AST::ERBElseNode?, ?ensure_clause: Herb::AST::ERBEnsureNode?) -> Herb::AST::ERBBeginNode
+
+    # : (String, Array[Herb::AST::Node], ?subsequent: Herb::AST::ERBRescueNode?) -> Herb::AST::ERBRescueNode
+    def erb_rescue: (String, Array[Herb::AST::Node], ?subsequent: Herb::AST::ERBRescueNode?) -> Herb::AST::ERBRescueNode
+
+    # : (Array[Herb::AST::Node]) -> Herb::AST::ERBEnsureNode
+    def erb_ensure: (Array[Herb::AST::Node]) -> Herb::AST::ERBEnsureNode
+
+    # : (String, Array[Herb::AST::Node]) -> Herb::AST::ERBWhileNode
+    def erb_while: (String, Array[Herb::AST::Node]) -> Herb::AST::ERBWhileNode
+
+    # : (String, Array[Herb::AST::Node]) -> Herb::AST::ERBUntilNode
+    def erb_until: (String, Array[Herb::AST::Node]) -> Herb::AST::ERBUntilNode
+
+    # : (String, Array[Herb::AST::Node]) -> Herb::AST::ERBForNode
+    def erb_for: (String, Array[Herb::AST::Node]) -> Herb::AST::ERBForNode
+
+    # : (String, Array[Herb::AST::Node], ?opening: String) -> Herb::AST::ERBBlockNode
+    def erb_block: (String, Array[Herb::AST::Node], ?opening: String) -> Herb::AST::ERBBlockNode
+
+    # : (String) -> Array[Herb::AST::RubyParameterNode]
+    def block_arguments: (String) -> Array[Herb::AST::RubyParameterNode]
+
+    # : (Prism::node) -> Herb::AST::RubyParameterNode?
+    def ruby_parameter: (Prism::node) -> Herb::AST::RubyParameterNode?
+
+    # : (Symbol?, String, bool, ?Prism::node?) -> Herb::AST::RubyParameterNode?
+    def ruby_parameter_node: (Symbol?, String, bool, ?Prism::node?) -> Herb::AST::RubyParameterNode?
+
+    # : (String, ?attributes: Array[Herb::AST::Node], ?body: Array[Herb::AST::Node], ?self_closing: bool) -> Herb::AST::HTMLElementNode
+    def element: (String, ?attributes: Array[Herb::AST::Node], ?body: Array[Herb::AST::Node], ?self_closing: bool) -> Herb::AST::HTMLElementNode
+
+    # : (String | Herb::AST::ERBContentNode, ?Array[Herb::AST::Node]?) -> Herb::AST::HTMLAttributeNode
+    def attribute: (String | Herb::AST::ERBContentNode, ?Array[Herb::AST::Node]?) -> Herb::AST::HTMLAttributeNode
+
+    # : (Array[Herb::AST::Node]) -> Herb::AST::HTMLCommentNode
+    def comment: (Array[Herb::AST::Node]) -> Herb::AST::HTMLCommentNode
+
+    # : (String) -> Herb::AST::HTMLDoctypeNode
+    def doctype: (String) -> Herb::AST::HTMLDoctypeNode
+
+    # : (String) -> Herb::AST::XMLDeclarationNode
+    def xml_declaration: (String) -> Herb::AST::XMLDeclarationNode
+
+    # : (Prism::node) -> Array[Prism::node]
+    def destructured: (Prism::node) -> Array[Prism::node]
+
+    # : (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+    def open_tag_children: (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+
+    # : [T < Herb::AST::Node] (T) -> T
+    def merge_texts!: [T < Herb::AST::Node] (T) -> T
+
+    # : (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+    def merge_adjacent_texts: (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+
+    # : (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+    def merge_literals: (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+
+    # : (String, String) -> { tag_opening: Herb::Token, content: Herb::Token, tag_closing: Herb::Token }
+    def erb_tag: (String, String) -> { tag_opening: Herb::Token, content: Herb::Token, tag_closing: Herb::Token }
+  end
+end

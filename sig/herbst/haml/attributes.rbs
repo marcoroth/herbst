@@ -1,0 +1,49 @@
+# Generated from lib/herbst/haml/attributes.rb with RBS::Inline
+
+module Herbst
+  module Haml
+    class Attributes
+      include Builder
+
+      @warnings: Array[String]
+
+      # : (Array[String]) -> void
+      def initialize: (Array[String]) -> void
+
+      # : (::Haml::Parser::ParseNode) -> Array[Herb::AST::Node]
+      def compile: (::Haml::Parser::ParseNode) -> Array[Herb::AST::Node]
+
+      private
+
+      # : (String, Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
+      def compile_attribute: (String, Array[[ Symbol, untyped ]]) -> Array[Herb::AST::Node]
+
+      # : (String, Array[[Symbol, untyped]], String) { (String) -> String } -> Array[Herb::AST::Node]
+      def compile_joined: (String, Array[[ Symbol, untyped ]], String) { (String) -> String } -> Array[Herb::AST::Node]
+
+      # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
+      def compile_hash: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
+
+      # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
+      def compile_single: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
+
+      # : (::Haml::Parser::ParseNode, Array[String]) -> Array[Herb::AST::Node]
+      def fallback: (::Haml::Parser::ParseNode, Array[String]) -> Array[Herb::AST::Node]
+
+      # : (String) -> bool
+      def literal?: (String) -> bool
+
+      # : (String) -> bool
+      def array_literal?: (String) -> bool
+
+      # : (String) -> bool
+      def boolean?: (String) -> bool
+
+      # : (String) -> String
+      def escape: (String) -> String
+
+      # : (::Haml::Parser::ParseNode, String) -> void
+      def warn: (::Haml::Parser::ParseNode, String) -> void
+    end
+  end
+end

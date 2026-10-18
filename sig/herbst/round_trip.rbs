@@ -1,0 +1,26 @@
+# Generated from lib/herbst/round_trip.rb with RBS::Inline
+
+module Herbst
+  # Checks that printed ERB parses back into exactly the tree it was printed from.
+  #
+  # The ERB is parsed with `track_whitespace: true`, and every node, field, token value and
+  # whitespace node is compared. Only source positions and Prism data are ignored, since a
+  # built tree doesn't have them.
+  #
+  #   Herbst::RoundTrip.difference(document, erb) # => nil, or where the trees differ
+  module RoundTrip
+    POSITIONAL_FIELDS: Array[String]
+
+    # : (Herb::AST::DocumentNode, String) -> String?
+    def self.difference: (Herb::AST::DocumentNode, String) -> String?
+
+    # : (Herb::AST::Node) -> untyped
+    def self.comparable: (Herb::AST::Node) -> untyped
+
+    # : (untyped) -> untyped
+    def self.strip_positions: (untyped) -> untyped
+
+    # : (untyped, untyped, String) -> String?
+    def self.tree_difference: (untyped, untyped, String) -> String?
+  end
+end

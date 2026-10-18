@@ -1,0 +1,5 @@
+# Generated from lib/herbst/version.rb with RBS::Inline
+
+module Herbst
+  VERSION: ::String
+end

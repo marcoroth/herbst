@@ -1,4 +1,4 @@
-<h2 align="center">Herbst 🍂</h2>
+<h2 align="center">🍂 Herbst</h2>
 
 <h4 align="center">Herb Syntax Tree</h4>
 
@@ -34,7 +34,38 @@ gem install herbst
 
 ## Usage
 
-Herbst is currently in early development. Usage instructions will be added as the gem matures.
+Herbst is currently in early development and supports converting Haml to ERB.
+
+Converting and printing ERB is pure Ruby. Formatting the output (`format: true`, and the default for the CLI) runs the Herb formatter through `npx`, so it requires Node.js.
+
+```ruby
+require "herbst"
+
+Herbst::Haml.parse("%p= greeting")   # => Herb::AST::DocumentNode
+Herbst::Haml.to_erb("%p= greeting")  # => "<p><%= greeting %></p>\n"
+Herbst::Haml.to_erb(source, format: true)
+
+Herbst::IdentityPrinter.print(Herb.parse(erb, track_whitespace: true).value)
+```
+
+Herbst doesn't compile templates. To compile Haml, compile its ERB with `Herb::Engine`:
+
+```ruby
+Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src
+```
+
+From the command line:
+
+```bash
+exe/herbst convert app/views/posts/show.html.haml   # prints the ERB
+exe/herbst convert app/views                        # writes show.html.erb next to show.html.haml
+```
+
+A single file is printed unless you pass `--write`. Directories, and several files at once, are written next to their sources with the `.haml` extension replaced by `.erb`, so `show.html.haml` becomes `show.html.erb`. A file without a format gets `html`, so `show.haml` becomes `show.html.erb`. Pass `--default-format FORMAT` for another format, or `--no-default-format` to write `show.erb`. The Haml files are kept, and existing ERB files are skipped unless you pass `--force`. Pass `--no-format` to skip the Herb formatter.
+
+Constructs that cannot be converted exactly (for example splatted attribute hashes, which become `tag.attributes(...)`) are reported as warnings. Files that can't be converted, for example because they use an unsupported filter such as `:markdown`, are reported and the remaining files are still converted.
+
+The CLI also checks that the ERB parses back into exactly the tree Herbst built, and reports any difference. Pass `--no-verify` to skip the check. The same check is available as `Herbst::RoundTrip.difference(document, erb)`. The CLI exits with status 1 when a file fails to convert or the check finds a difference.
 
 ## Development
 

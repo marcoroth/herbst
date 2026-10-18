@@ -1,0 +1,25 @@
+# Generated from lib/herbst/printer.rb with RBS::Inline
+
+module Herbst
+  module Printer
+    FORMATTER: Array[String]
+
+    class Error < Herbst::Error
+    end
+
+    # : (Herb::AST::DocumentNode, ?format: bool) -> String
+    def self.print: (Herb::AST::DocumentNode, ?format: bool) -> String
+
+    # : (Array[Herb::AST::DocumentNode], ?format: bool) -> Array[String]
+    def self.print_all: (Array[Herb::AST::DocumentNode], ?format: bool) -> Array[String]
+
+    # : (String) -> String
+    def self.format: (String) -> String
+
+    # : (Array[String]) -> Array[String]
+    def self.format_all: (Array[String]) -> Array[String]
+
+    # : (*String, **untyped) -> String
+    def self.run: (*String, **untyped) -> String
+  end
+end

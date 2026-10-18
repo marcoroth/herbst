@@ -1,0 +1,98 @@
+# Generated from lib/herbst/cli.rb with RBS::Inline
+
+module Herbst
+  # The `herbst` command.
+  #
+  #   herbst convert app/views/posts/show.html.haml   # prints the ERB
+  #   herbst convert app/views                        # writes show.html.erb next to show.html.haml
+  #
+  # A single file is printed to stdout unless `--write` is given. Directories and multiple
+  # files are written next to their sources, replacing the `.haml` extension with `.erb`.
+  # Existing ERB files are skipped unless `--force` is given. A file without a format gets
+  # `html`, so `show.haml` becomes `show.html.erb`, while `welcome.text.haml` keeps its format.
+  class CLI
+    class Conversion
+      attr_reader path: String
+
+      attr_reader warnings: Array[String]
+
+      attr_reader error: String?
+
+      attr_reader difference: String?
+
+      attr_accessor erb: String?
+
+      # : (String, ?erb: String?, ?warnings: Array[String], ?error: String?, ?difference: String?) -> void
+      def initialize: (String, ?erb: String?, ?warnings: Array[String], ?error: String?, ?difference: String?) -> void
+
+      # : () -> bool
+      def failed?: () -> bool
+    end
+
+    @option_parser: OptionParser?
+
+    @version: bool
+
+    @help: bool
+
+    @default_format: String?
+
+    @force: bool
+
+    @write: bool
+
+    @verify: bool
+
+    @format: bool
+
+    @stderr: IO
+
+    @stdout: IO
+
+    @arguments: Array[String]
+
+    # : (Array[String], ?stdout: IO, ?stderr: IO) -> void
+    def initialize: (Array[String], ?stdout: IO, ?stderr: IO) -> void
+
+    # : () -> Integer
+    def run: () -> Integer
+
+    private
+
+    # : (Array[String]) -> Integer
+    def convert: (Array[String]) -> Integer
+
+    # : () -> OptionParser
+    def option_parser: () -> OptionParser
+
+    # : (?Integer, ?String?) -> Integer
+    def help: (?Integer, ?String?) -> Integer
+
+    # : () -> Integer
+    def version: () -> Integer
+
+    # : (String) -> Conversion
+    def convert_file: (String) -> Conversion
+
+    # : (Array[Conversion]) -> void
+    def format: (Array[Conversion]) -> void
+
+    # : (Conversion) -> Integer
+    def print_file: (Conversion) -> Integer
+
+    # : (Array[Conversion]) -> Integer
+    def write_files: (Array[Conversion]) -> Integer
+
+    # : (String) -> String
+    def target_path: (String) -> String
+
+    # : (Conversion) -> void
+    def report: (Conversion) -> void
+
+    # : (Integer, Integer, Integer, Integer) -> String
+    def summary: (Integer, Integer, Integer, Integer) -> String
+
+    # : (String) -> Integer
+    def fail_with: (String) -> Integer
+  end
+end

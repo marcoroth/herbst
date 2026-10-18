@@ -1,0 +1,57 @@
+# Note: This file is hand written, `rbs-inline` does not generate this file.
+
+module Haml
+  VERSION: String
+
+  class Error < StandardError
+    def line: () -> Integer?
+  end
+
+  BOOLEAN_ATTRIBUTES: Set[String]
+
+  class Parser
+    MID_BLOCK_KEYWORDS: Array[String]
+
+    def initialize: (Hash[Symbol, untyped] options) -> void
+
+    def call: (String template) -> ParseNode
+
+    class ParseNode
+      def type: () -> Symbol
+
+      def line: () -> Integer
+
+      def value: () -> Hash[Symbol, untyped]
+
+      def parent: () -> ParseNode?
+
+      def children: () -> Array[ParseNode]
+    end
+
+    class DynamicAttributes
+      def new: () -> String?
+
+      def old: () -> String?
+    end
+  end
+
+  class AttributeParser
+    def self.parse: (String text) -> Hash[String, String]?
+  end
+
+  class StringSplitter
+    def self.compile: (String code) -> Array[[Symbol, String]]
+  end
+
+  module Util
+    def self.contains_interpolation?: (String str) -> bool
+
+    def self.unescape_interpolation: (String str, ?bool? escape_html) -> String
+  end
+end
+
+module Temple
+  module StaticAnalyzer
+    def self.static?: (String code) -> bool
+  end
+end

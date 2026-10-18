@@ -1,0 +1,33 @@
+!!! 5
+%html
+  %head
+    %title= @title
+    :css
+      body { color: red; }
+  %body
+    -# a haml comment
+    / an html comment
+    #main.container{class: [extra, "x"], data: {user_id: 1, role: role}}
+      %h1.title Hello #{name}!
+      %p!= raw_html
+      %a{href: url, title: "Go & see"} Link
+      %input{type: :checkbox, checked: true, disabled: off}
+      %br
+      - if admin?
+        %p Admin
+      - elsif user?
+        %p User
+      - else
+        %p Guest
+      - case role
+      - when :a
+        A
+      - else
+        Other
+      %ul
+        - items.each do |item|
+          %li= item
+      = link_to "/x" do
+        %span inner
+      :javascript
+        alert(#{count});

@@ -1,0 +1,21 @@
+# Generated from lib/herbst/haml.rb with RBS::Inline
+
+module Herbst
+  # Converts Haml templates into Herb's syntax tree and ERB.
+  #
+  #   Herbst::Haml.parse("%p= greeting")   # => Herb::AST::DocumentNode
+  #   Herbst::Haml.to_erb("%p= greeting")  # => "<p><%= greeting %></p>\n"
+  #
+  # To compile Haml, compile its ERB with Herb::Engine:
+  #
+  #   Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src
+  #
+  # Use Herbst::Haml::Converter directly to read the warnings of a conversion.
+  module Haml
+    # : (String, **untyped) -> Herb::AST::DocumentNode
+    def self.parse: (String, **untyped) -> Herb::AST::DocumentNode
+
+    # : (String, ?format: bool, **untyped) -> String
+    def self.to_erb: (String, ?format: bool, **untyped) -> String
+  end
+end
