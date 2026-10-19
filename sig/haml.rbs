@@ -49,9 +49,3 @@ module Haml
     def self.unescape_interpolation: (String str, ?bool? escape_html) -> String
   end
 end
-
-module Temple
-  module StaticAnalyzer
-    def self.static?: (String code) -> bool
-  end
-end

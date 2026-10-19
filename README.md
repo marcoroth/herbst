@@ -10,13 +10,13 @@ Herbst (German for "autumn") provides tooling to translate various HTML templati
 
 ## Why Herbst?
 
-Herbst bridges the gap between different HTML templating languages and the Herb ecosystem by:
+Herb's tooling (the linter, formatter, language server and `Herb::Engine`) works on Herb's syntax tree, which Herb builds from HTML+ERB. Herbst builds the same tree from other templating languages, so you can:
 
-- **Translating** Haml, Slim, and other HTML templating languages to Herb's unified syntax tree
-- **Enabling** Herb tooling (linter, formatter, language server) to work with any supported templating language
-- **Unifying** the developer experience across different HTML templating languages
+- **Convert** Haml and Slim templates to ERB, one file or a whole `app/views` at a time
+- **Compile** them with `Herb::Engine`, by converting them to ERB first
+- **Use** Herb's HTML-aware tooling on templates that aren't written in ERB
 
-All these HTML templating languages eventually produce HTML, and Herbst ensures they can all benefit from Herb's HTML-aware tooling.
+All of these languages render HTML in the end, so they can all share the same syntax tree.
 
 ## Installation
 
@@ -34,7 +34,7 @@ gem install herbst
 
 ## Usage
 
-Herbst is currently in early development and supports converting Haml to ERB.
+Herbst is currently in early development and supports converting Haml and Slim to ERB. Add the `haml` or `slim` gem for the languages you convert, since Herbst doesn't depend on either.
 
 Converting and printing ERB is pure Ruby. Formatting the output (`format: true`, and the default for the CLI) runs the Herb formatter through `npx`, so it requires Node.js.
 
@@ -45,10 +45,13 @@ Herbst::Haml.parse("%p= greeting")   # => Herb::AST::DocumentNode
 Herbst::Haml.to_erb("%p= greeting")  # => "<p><%= greeting %></p>\n"
 Herbst::Haml.to_erb(source, format: true)
 
+Herbst::Slim.parse("p = greeting")     # => Herb::AST::DocumentNode
+Herbst::Slim.to_erb("p = greeting")    # => "<p><%= greeting %></p>"
+
 Herbst::IdentityPrinter.print(Herb.parse(erb, track_whitespace: true).value)
 ```
 
-Herbst doesn't compile templates. To compile Haml, compile its ERB with `Herb::Engine`:
+Herbst doesn't compile templates. To compile Haml or Slim, compile its ERB with `Herb::Engine`:
 
 ```ruby
 Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src
@@ -58,10 +61,10 @@ From the command line:
 
 ```bash
 exe/herbst convert app/views/posts/show.html.haml   # prints the ERB
-exe/herbst convert app/views                        # writes show.html.erb next to show.html.haml
+exe/herbst convert app/views                        # writes show.html.erb next to show.html.haml or .slim
 ```
 
-A single file is printed unless you pass `--write`. Directories, and several files at once, are written next to their sources with the `.haml` extension replaced by `.erb`, so `show.html.haml` becomes `show.html.erb`. A file without a format gets `html`, so `show.haml` becomes `show.html.erb`. Pass `--default-format FORMAT` for another format, or `--no-default-format` to write `show.erb`. The Haml files are kept, and existing ERB files are skipped unless you pass `--force`. Pass `--no-format` to skip the Herb formatter.
+A single file is printed unless you pass `--write`. Directories, and several files at once, are written next to their sources with the `.haml` or `.slim` extension replaced by `.erb`, so `show.html.haml` becomes `show.html.erb`. A file without a format gets `html`, so `show.haml` becomes `show.html.erb`. Pass `--default-format FORMAT` for another format, or `--no-default-format` to write `show.erb`. The Haml and Slim files are kept, and existing ERB files are skipped unless you pass `--force`. Pass `--no-format` to skip the Herb formatter.
 
 Constructs that cannot be converted exactly (for example splatted attribute hashes, which become `tag.attributes(...)`) are reported as warnings. Files that can't be converted, for example because they use an unsupported filter such as `:markdown`, are reported and the remaining files are still converted.
 

@@ -6,10 +6,10 @@ module Herbst
   # The `herbst` command.
   #
   #   herbst convert app/views/posts/show.html.haml   # prints the ERB
-  #   herbst convert app/views                        # writes show.html.erb next to show.html.haml
+  #   herbst convert app/views                        # writes show.html.erb next to show.html.haml or .slim
   #
   # A single file is printed to stdout unless `--write` is given. Directories and multiple
-  # files are written next to their sources, replacing the `.haml` extension with `.erb`.
+  # files are written next to their sources, replacing the `.haml` or `.slim` extension with `.erb`.
   # Existing ERB files are skipped unless `--force` is given. A file without a format gets
   # `html`, so `show.haml` becomes `show.html.erb`, while `welcome.text.haml` keeps its format.
   #
@@ -71,7 +71,7 @@ module Herbst
 
       case command
       when "convert"
-        paths.empty? ? help(1, "Missing path: pass the Haml files or directories to convert.") : convert(paths)
+        paths.empty? ? help(1, "Missing path: pass the Haml or Slim files, or directories, to convert.") : convert(paths)
       when "help"
         help
       when "version"
@@ -92,8 +92,8 @@ module Herbst
       missing = paths.reject { |path| File.exist?(path) }
       return fail_with("#{missing.join(", ")}: No such file or directory") unless missing.empty?
 
-      files = paths.flat_map { |path| File.directory?(path) ? Dir[File.join(path, "**", "*.haml")] : [path] }.sort
-      return fail_with("No .haml files found in #{paths.join(", ")}") if files.empty?
+      files = paths.flat_map { |path| File.directory?(path) ? Dir[File.join(path, "**", "*.{haml,slim}")] : [path] }.sort
+      return fail_with("No .haml or .slim files found in #{paths.join(", ")}") if files.empty?
 
       conversions = files.map { |file| convert_file(file) }
       format(conversions) if @format
@@ -143,9 +143,9 @@ module Herbst
           bundle exec herbst [command] [options]
 
         Commands:
-          bundle exec herbst convert [paths]    Convert Haml files, or every Haml file in a directory, to ERB.
+          bundle exec herbst convert [paths]    Convert Haml and Slim files, or every one in a directory, to ERB.
           bundle exec herbst help               Show this message.
-          bundle exec herbst version            Prints the versions of Herbst, Herb and Haml.
+          bundle exec herbst version            Prints the versions of Herbst, Herb, Haml and Slim.
 
         Converting:
           A single file is printed to stdout, unless `--write` is passed:
@@ -154,7 +154,7 @@ module Herbst
           Directories, and several files at once, are written next to their sources:
             bundle exec herbst convert app/views
 
-          Existing ERB files are skipped unless `--force` is passed. The Haml files are kept.
+          Existing ERB files are skipped unless `--force` is passed. The Haml and Slim files are kept.
 
           A file without a format gets html, so show.haml becomes show.html.erb. Pass
           `--default-format FORMAT` for another format, or `--no-default-format` to write show.erb.
@@ -168,21 +168,33 @@ module Herbst
 
     #: () -> Integer
     def version
-      @stdout.puts "herbst gem v#{VERSION}, herb gem v#{Herb::VERSION}, haml gem v#{::Haml::VERSION}"
+      versions = ["herbst gem v#{VERSION}", "herb gem v#{Herb::VERSION}"]
+
+      ["haml", "slim"].each do |name|
+        version = Gem::Specification.find_all_by_name(name).map(&:version).max # steep:ignore
+        versions << "#{name} gem v#{version}" if version
+      end
+
+      @stdout.puts versions.join(", ")
 
       0
     end
 
     #: (String) -> Conversion
     def convert_file(file)
-      converter = Haml::Converter.new
+      converter = converter_for(file)
       document = converter.convert(File.read(file, encoding: "UTF-8"))
       erb = IdentityPrinter.print(document)
       difference = RoundTrip.difference(document, erb) if @verify
 
       Conversion.new(file, erb: erb, warnings: converter.warnings, difference: difference)
-    rescue Herbst::Error, ::Haml::Error => e
+    rescue Herbst::Error => e
       Conversion.new(file, error: e.message)
+    end
+
+    #: (String) -> Herbst::Converter
+    def converter_for(path)
+      File.extname(path) == ".slim" ? Slim::Converter.new : Haml::Converter.new
     end
 
     #: (Array[Conversion]) -> void
@@ -231,7 +243,7 @@ module Herbst
 
     #: (String) -> String
     def target_path(path)
-      base = path.delete_suffix(".haml")
+      base = path.sub(/\.(haml|slim)\z/, "")
       base = "#{base}.#{@default_format}" if @default_format && !File.basename(base).include?(".")
 
       "#{base}.erb"

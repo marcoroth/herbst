@@ -1,0 +1,30 @@
+# Note: This file is hand written, `rbs-inline` does not generate this file.
+
+module Slim
+  VERSION: String
+
+  class Parser
+    def initialize: (?Hash[Symbol, untyped] options) -> void
+
+    def call: (String template) -> untyped
+
+    class SyntaxError < StandardError
+    end
+  end
+
+  class Interpolation
+    def call: (untyped exp) -> untyped
+  end
+
+  class DoInserter
+    BLOCK_REGEX: Regexp
+  end
+
+  class EndInserter
+    IF_RE: Regexp
+
+    ELSE_RE: Regexp
+
+    END_RE: Regexp
+  end
+end

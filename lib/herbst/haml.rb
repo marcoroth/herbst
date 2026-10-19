@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+begin
+  require "haml"
+rescue LoadError
+  raise Herbst::Error, "Converting Haml templates requires the haml gem. Add `gem \"haml\"` to your Gemfile."
+end
+
 module Herbst
   # Converts Haml templates into Herb's syntax tree and ERB.
   #
@@ -10,7 +16,8 @@ module Herbst
   #
   #   Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src
   #
-  # Use Herbst::Haml::Converter directly to read the warnings of a conversion.
+  # Use Herbst::Haml::Converter directly to read the warnings of a conversion. The haml gem is
+  # only needed when converting Haml, so it isn't a dependency of Herbst.
   #
   module Haml
     #: (String, **untyped) -> Herb::AST::DocumentNode

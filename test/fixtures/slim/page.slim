@@ -1,0 +1,43 @@
+doctype html
+html
+  head
+    title = title
+    css:
+      body { color: red; }
+  body
+    / not rendered
+    /! visible comment
+    #main.container class=["x", extra] data-user-id=1 data-role=role
+      h1.title Hello #{name}!
+      p == raw_html
+      p = raw_html
+      a href=url title="Go & see" Link
+      input type="checkbox" checked=true disabled=false
+      br
+      - if admin?
+        p Admin
+      - elsif user?
+        p User
+      - else
+        p Guest
+      - case role
+      - when :a
+        | A
+      - else
+        | Other
+      ul
+        - items.each do |item|
+          li = item
+      - unless items.empty?
+        p.count #{items.size} items
+      - begin
+        p = risky
+      - rescue => e
+        p.error = e.message
+      p
+        span> spaced
+        span tight
+        | text
+        '  with trailing space
+      javascript:
+        alert(#{items.size});

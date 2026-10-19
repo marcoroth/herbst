@@ -1,0 +1,17 @@
+# Generated from lib/herbst/slim.rb with RBS::Inline
+
+module Herbst
+  # Converts Slim templates into Herb's syntax tree and ERB.
+  #
+  #   Herbst::Slim.parse("p = greeting")   # => Herb::AST::DocumentNode
+  #   Herbst::Slim.to_erb("p = greeting")  # => "<p><%= greeting %></p>"
+  #
+  # The slim gem is only needed when converting Slim, so it isn't a dependency of Herbst.
+  module Slim
+    # : (String, **untyped) -> Herb::AST::DocumentNode
+    def self.parse: (String, **untyped) -> Herb::AST::DocumentNode
+
+    # : (String, ?format: bool, **untyped) -> String
+    def self.to_erb: (String, ?format: bool, **untyped) -> String
+  end
+end

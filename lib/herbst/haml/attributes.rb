@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "cgi/escape"
-require "haml"
 require "temple"
 
 module Herbst

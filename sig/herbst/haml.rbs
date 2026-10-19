@@ -10,7 +10,8 @@ module Herbst
   #
   #   Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src
   #
-  # Use Herbst::Haml::Converter directly to read the warnings of a conversion.
+  # Use Herbst::Haml::Converter directly to read the warnings of a conversion. The haml gem is
+  # only needed when converting Haml, so it isn't a dependency of Herbst.
   module Haml
     # : (String, **untyped) -> Herb::AST::DocumentNode
     def self.parse: (String, **untyped) -> Herb::AST::DocumentNode

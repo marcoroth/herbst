@@ -159,11 +159,11 @@ class Herbst::CLITest < Minitest::Spec
     assert_includes stderr, "missing: No such file or directory"
   end
 
-  it "reports directories without Haml files" do
+  it "reports directories without Haml or Slim files" do
     _stdout, stderr, status = herbst(@directory)
 
     assert_equal 1, status
-    assert_includes stderr, "No .haml files found"
+    assert_includes stderr, "No .haml or .slim files found"
   end
 
   def run_cli(*arguments)
@@ -212,7 +212,7 @@ class Herbst::CLITest < Minitest::Spec
     _stdout, stderr, status = run_cli("convert")
 
     assert_equal 1, status
-    assert stderr.start_with?("Missing path: pass the Haml files or directories to convert.\n\nHerbst")
+    assert stderr.start_with?("Missing path: pass the Haml or Slim files, or directories, to convert.\n\nHerbst")
   end
 
   it "prints the versions" do
@@ -220,7 +220,7 @@ class Herbst::CLITest < Minitest::Spec
       stdout, _stderr, status = run_cli(argument)
 
       assert_equal 0, status
-      assert_equal "herbst gem v#{Herbst::VERSION}, herb gem v#{Herb::VERSION}, haml gem v#{Haml::VERSION}\n", stdout
+      assert_equal "herbst gem v#{Herbst::VERSION}, herb gem v#{Herb::VERSION}, haml gem v#{Haml::VERSION}, slim gem v#{Slim::VERSION}\n", stdout
     end
   end
 

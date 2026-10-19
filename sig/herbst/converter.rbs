@@ -1,0 +1,59 @@
+# Generated from lib/herbst/converter.rb with RBS::Inline
+
+module Herbst
+  class Converter
+    include Builder
+
+    INDENT: String
+
+    type clause = [ String, String?, Array[Herb::AST::Node], Integer? ]
+
+    attr_reader warnings: Array[String]
+
+    @markup: bool
+
+    # : () -> void
+    def initialize: () -> void
+
+    # : (String) -> Herb::AST::DocumentNode
+    def convert: (String) -> Herb::AST::DocumentNode
+
+    # : (String) -> Array[Herb::AST::Node]
+    def text_nodes: (String) -> Array[Herb::AST::Node]
+
+    # : (Integer?, String) -> void
+    def warn: (Integer?, String) -> void
+
+    private
+
+    # : (Herb::AST::DocumentNode) -> Herb::AST::DocumentNode
+    def finish: (Herb::AST::DocumentNode) -> Herb::AST::DocumentNode
+
+    # : (Integer) -> String
+    def newline: (Integer) -> String
+
+    # : (String) -> String?
+    def keyword: (String) -> String?
+
+    # : (String, String?, Array[Herb::AST::Node], Array[clause], Integer, ?line: Integer?) -> Herb::AST::Node
+    def control: (String, String?, Array[Herb::AST::Node], Array[clause], Integer, ?line: Integer?) -> Herb::AST::Node
+
+    # : (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBIfNode
+    def control_if: (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBIfNode
+
+    # : (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBUnlessNode
+    def control_unless: (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBUnlessNode
+
+    # : (String, Array[Herb::AST::Node], Array[clause], Integer, Integer?) -> Herb::AST::ERBCaseNode
+    def control_case: (String, Array[Herb::AST::Node], Array[clause], Integer, Integer?) -> Herb::AST::ERBCaseNode
+
+    # : (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBBeginNode
+    def control_begin: (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBBeginNode
+
+    # : (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBBlockNode
+    def control_block: (String, Array[Herb::AST::Node], Array[clause]) -> Herb::AST::ERBBlockNode
+
+    # : (String?, String, Integer?) -> bot
+    def unsupported_clause: (String?, String, Integer?) -> bot
+  end
+end

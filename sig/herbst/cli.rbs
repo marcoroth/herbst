@@ -4,10 +4,10 @@ module Herbst
   # The `herbst` command.
   #
   #   herbst convert app/views/posts/show.html.haml   # prints the ERB
-  #   herbst convert app/views                        # writes show.html.erb next to show.html.haml
+  #   herbst convert app/views                        # writes show.html.erb next to show.html.haml or .slim
   #
   # A single file is printed to stdout unless `--write` is given. Directories and multiple
-  # files are written next to their sources, replacing the `.haml` extension with `.erb`.
+  # files are written next to their sources, replacing the `.haml` or `.slim` extension with `.erb`.
   # Existing ERB files are skipped unless `--force` is given. A file without a format gets
   # `html`, so `show.haml` becomes `show.html.erb`, while `welcome.text.haml` keeps its format.
   class CLI
@@ -73,6 +73,9 @@ module Herbst
 
     # : (String) -> Conversion
     def convert_file: (String) -> Conversion
+
+    # : (String) -> Herbst::Converter
+    def converter_for: (String) -> Herbst::Converter
 
     # : (Array[Conversion]) -> void
     def format: (Array[Conversion]) -> void

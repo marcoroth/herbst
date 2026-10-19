@@ -1,0 +1,18 @@
+# Note: This file is hand written, `rbs-inline` does not generate this file.
+
+module Temple
+  class FilterError < StandardError
+  end
+
+  module StaticAnalyzer
+    def self.static?: (String code) -> bool
+  end
+
+  module HTML
+    class Fast
+      def initialize: (?Hash[Symbol, untyped] options) -> void
+
+      def call: (untyped exp) -> untyped
+    end
+  end
+end

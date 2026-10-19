@@ -6,20 +6,12 @@ module Herbst
     #
     # The resulting tree prints to ERB that renders the same HTML as the Haml
     # template (modulo insignificant whitespace).
-    class Converter
-      include Builder
-
-      INDENT: String
-
+    class Converter < Herbst::Converter
       MID_BLOCK_KEYWORDS: Array[String]
 
       ESCAPED_INTERPOLATION: Regexp
 
-      attr_reader warnings: Array[String]
-
-      type clause = [ ::Haml::Parser::ParseNode, Array[::Haml::Parser::ParseNode] ]
-
-      @markup: bool
+      type haml_clause = [ ::Haml::Parser::ParseNode, Array[::Haml::Parser::ParseNode] ]
 
       @nuke_inner: Array[bool?]
 
@@ -44,13 +36,6 @@ module Herbst
       # : (String, escape: bool?) -> Array[Herb::AST::Node]
       def interpolate: (String, escape: bool?) -> Array[Herb::AST::Node]
 
-      # A literal `<%` or `%>` in text would open or close an ERB tag, so they are printed through ERB.
-      # : (String) -> Array[Herb::AST::Node]
-      def text_nodes: (String) -> Array[Herb::AST::Node]
-
-      # : (::Haml::Parser::ParseNode, String) -> void
-      def warn: (::Haml::Parser::ParseNode, String) -> void
-
       private
 
       # : (::Haml::Parser::ParseNode, Integer) -> (Herb::AST::Node | Array[Herb::AST::Node])
@@ -62,29 +47,11 @@ module Herbst
       # : (::Haml::Parser::ParseNode, Integer) -> Herb::AST::Node
       def convert_silent_script: (::Haml::Parser::ParseNode, Integer) -> Herb::AST::Node
 
-      # : (::Haml::Parser::ParseNode) -> [Array[::Haml::Parser::ParseNode], Array[clause]]
-      def segments: (::Haml::Parser::ParseNode) -> [ Array[::Haml::Parser::ParseNode], Array[clause] ]
+      # : (::Haml::Parser::ParseNode) -> [Array[::Haml::Parser::ParseNode], Array[haml_clause]]
+      def segments: (::Haml::Parser::ParseNode) -> [ Array[::Haml::Parser::ParseNode], Array[haml_clause] ]
 
       # : (::Haml::Parser::ParseNode) -> bool
       def mid_block?: (::Haml::Parser::ParseNode) -> bool
-
-      # : (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBIfNode
-      def convert_if: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBIfNode
-
-      # : (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBUnlessNode
-      def convert_unless: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBUnlessNode
-
-      # : (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBCaseNode
-      def convert_case: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBCaseNode
-
-      # : (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBeginNode
-      def convert_begin: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBeginNode
-
-      # : (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBlockNode
-      def convert_block: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBlockNode
-
-      # : (::Haml::Parser::ParseNode, String) -> bot
-      def unsupported_clause: (::Haml::Parser::ParseNode, String) -> bot
 
       # : (::Haml::Parser::ParseNode, Integer) -> (Herb::AST::HTMLElementNode | Array[Herb::AST::Node])
       def convert_tag: (::Haml::Parser::ParseNode, Integer) -> (Herb::AST::HTMLElementNode | Array[Herb::AST::Node])
@@ -106,9 +73,6 @@ module Herbst
 
       # : [T] (bool?) { () -> T } -> T
       def with_nuke_inner: [T] (bool?) { () -> T } -> T
-
-      # : (Integer) -> String
-      def newline: (Integer) -> String
     end
   end
 end

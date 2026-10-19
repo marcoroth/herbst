@@ -7,9 +7,17 @@ require "minitest/autorun"
 
 module ConversionHelper
   FIXTURES = File.expand_path("fixtures/haml", __dir__)
+  SLIM_FIXTURES = File.expand_path("fixtures/slim", __dir__)
 
   def to_erb(haml)
     document = Herbst::Haml.parse(haml)
+    erb = Herbst::Printer.print(document, format: false)
+    assert_round_trip(document, erb)
+    erb
+  end
+
+  def slim_to_erb(slim)
+    document = Herbst::Slim.parse(slim)
     erb = Herbst::Printer.print(document, format: false)
     assert_round_trip(document, erb)
     erb

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "haml"
-
 module Herbst
   module Haml
     # Converts the tree produced by Haml::Parser into a Herb AST.
@@ -9,44 +7,39 @@ module Herbst
     # The resulting tree prints to ERB that renders the same HTML as the Haml
     # template (modulo insignificant whitespace).
     #
-    class Converter
-      include Builder
-
-      INDENT = "  " #: String
+    class Converter < Herbst::Converter
       MID_BLOCK_KEYWORDS = ::Haml::Parser::MID_BLOCK_KEYWORDS - ["end"] #: Array[String]
       ESCAPED_INTERPOLATION = /\AHaml::Util\.escape_html_safe\(\((.*)\)\.to_s\)\z/m #: Regexp
 
-      attr_reader :warnings #: Array[String]
-
       # @rbs!
-      #   type clause = [::Haml::Parser::ParseNode, Array[::Haml::Parser::ParseNode]]
+      #   type haml_clause = [::Haml::Parser::ParseNode, Array[::Haml::Parser::ParseNode]]
 
       # @rbs @options: Hash[Symbol, untyped]
       # @rbs @attributes: Attributes
       # @rbs @filters: Filters
       # @rbs @nuke_inner: Array[bool?]
-      # @rbs @markup: bool
 
       #: (?Hash[Symbol, untyped]) -> void
       def initialize(options = {})
+        super()
+
         @options = { escape_html: true }.merge(options)
-        @warnings = []
         @attributes = Attributes.new(@warnings)
         @filters = Filters.new(self)
         @nuke_inner = [false]
-        @markup = false
       end
 
       #: (String) -> Herb::AST::DocumentNode
       def convert(source)
         root = ::Haml::Parser.new(@options).call(source)
         children = join(root.children, 0)
-        children << text("\n") unless children.empty?
-        document = merge_texts!(document(children))
 
-        # Text with HTML in it, like `Hello <code>x</code>`, prints as markup, so Herb builds the
-        # elements it contains from the printed ERB.
-        @markup ? Herb.parse(IdentityPrinter.print(document), track_whitespace: true).value : document
+        children << text("\n") unless children.empty?
+
+        finish(document(children))
+      rescue ::Haml::Error => e
+        line = e.line
+        raise Herbst::Error, line ? "line #{line + 1}: #{e.message}" : e.message
       end
 
       #: (Array[::Haml::Parser::ParseNode], Integer) -> Array[Herb::AST::Node]
@@ -90,25 +83,6 @@ module Herbst
         end
       rescue StandardError
         [erb(literal, opening: escape ? "<%=" : "<%==")]
-      end
-
-      # A literal `<%` or `%>` in text would open or close an ERB tag, so they are printed through ERB.
-      #: (String) -> Array[Herb::AST::Node]
-      def text_nodes(value)
-        @markup = true if value.match?(%r{<[A-Za-z/!?]})
-
-        value.split(/(<%|%>)/).reject(&:empty?).map do |part|
-          case part
-          when "<%" then erb('"<%"', opening: "<%==")
-          when "%>" then erb('"%\>"', opening: "<%==")
-          else text(part)
-          end
-        end
-      end
-
-      #: (::Haml::Parser::ParseNode, String) -> void
-      def warn(node, message)
-        @warnings << "line #{node.line}: #{message}"
       end
 
       private
@@ -158,33 +132,18 @@ module Herbst
 
         main, clauses = segments(node)
 
-        case node.value[:keyword]
-        when "if"
-          convert_if(code, main, clauses, depth)
-        when "unless"
-          convert_unless(code, main, clauses, depth)
-        when "case"
-          convert_case(code, main, clauses, depth)
-        when "begin"
-          convert_begin(code, main, clauses, depth)
-        else
-          if clauses.empty? && code.match?(/\A\s*while\b/)
-            erb_while(code, block_body(main, depth))
-          elsif clauses.empty? && code.match?(/\A\s*until\b/)
-            erb_until(code, block_body(main, depth))
-          elsif clauses.empty? && code.match?(/\A\s*for\b/)
-            erb_for(code, block_body(main, depth))
-          else
-            convert_block(code, main, clauses, depth)
-          end
+        converted_clauses = clauses.map do |clause, children|
+          [clause.value[:text], clause.value[:keyword], block_body(children, depth), clause.line] #: Herbst::Converter::clause
         end
+
+        control(code, node.value[:keyword] || keyword(code), block_body(main, depth), converted_clauses, depth, line: node.line)
       end
 
-      #: (::Haml::Parser::ParseNode) -> [Array[::Haml::Parser::ParseNode], Array[clause]]
+      #: (::Haml::Parser::ParseNode) -> [Array[::Haml::Parser::ParseNode], Array[haml_clause]]
       def segments(node)
         main = node.children.take_while { |child| !mid_block?(child) }
         groups = node.children.drop(main.size).slice_before { |child| mid_block?(child) }
-        clauses = groups.map { |group| [group.fetch(0), group.drop(1)] } #: Array[clause]
+        clauses = groups.map { |group| [group.fetch(0), group.drop(1)] } #: Array[haml_clause]
 
         [main, clauses]
       end
@@ -192,86 +151,6 @@ module Herbst
       #: (::Haml::Parser::ParseNode) -> bool
       def mid_block?(node)
         node.type == :silent_script && MID_BLOCK_KEYWORDS.include?(node.value[:keyword])
-      end
-
-      #: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBIfNode
-      def convert_if(code, main, clauses, depth)
-        subsequent = nil #: (Herb::AST::ERBIfNode | Herb::AST::ERBElseNode)?
-
-        clauses.reverse_each do |clause, children|
-          subsequent =
-            case clause.value[:keyword]
-            when "else"
-              erb_else(block_body(children, depth))
-            when "elsif"
-              erb_if(clause.value[:text], block_body(children, depth), subsequent: subsequent, end_node: nil)
-            else
-              unsupported_clause(clause, "if")
-            end
-        end
-
-        erb_if(code, block_body(main, depth), subsequent: subsequent)
-      end
-
-      #: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBUnlessNode
-      def convert_unless(code, main, clauses, depth)
-        clauses.map(&:first).each { |clause| unsupported_clause(clause, "unless") unless clause.value[:keyword] == "else" }
-        else_clause = clauses.find { |clause, _| clause.value[:keyword] == "else" }
-
-        erb_unless(code, block_body(main, depth), else_clause: else_clause && erb_else(block_body(else_clause[1], depth)))
-      end
-
-      #: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBCaseNode
-      def convert_case(code, main, clauses, depth)
-        main.each { |child| warn(child, "content between `case` and the first `when` was dropped") }
-
-        conditions = clauses.select { |clause, _| clause.value[:keyword] == "when" }.map do |clause, children|
-          erb_when(clause.value[:text], block_body(children, depth))
-        end
-
-        else_clause = clauses.find { |clause, _| clause.value[:keyword] == "else" }
-
-        node = erb_case(code, conditions, else_clause: else_clause && erb_else(block_body(else_clause[1], depth)))
-        node.children << text(newline(depth))
-
-        node
-      end
-
-      #: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBeginNode
-      def convert_begin(code, main, clauses, depth)
-        rescues = clauses.select { |clause, _| clause.value[:keyword] == "rescue" }
-        else_clause = clauses.find { |clause, _| clause.value[:keyword] == "else" }
-        ensure_clause = clauses.find { |clause, _| clause.value[:keyword] == "ensure" }
-
-        rescue_clause = nil #: Herb::AST::ERBRescueNode?
-
-        rescues.reverse_each do |clause, children|
-          rescue_clause = erb_rescue(clause.value[:text], block_body(children, depth), subsequent: rescue_clause)
-        end
-
-        erb_begin(
-          code, block_body(main, depth),
-          rescue_clause: rescue_clause,
-          else_clause: else_clause && erb_else(block_body(else_clause[1], depth)),
-          ensure_clause: ensure_clause && erb_ensure(block_body(ensure_clause[1], depth))
-        )
-      end
-
-      #: (String, Array[::Haml::Parser::ParseNode], Array[clause], Integer) -> Herb::AST::ERBBlockNode
-      def convert_block(code, main, clauses, depth)
-        body = block_body(main, depth)
-
-        clauses.each do |clause, children|
-          body << erb(clause.value[:text], opening: "<%")
-          body.concat(block_body(children, depth))
-        end
-
-        erb_block(code, body)
-      end
-
-      #: (::Haml::Parser::ParseNode, String) -> bot
-      def unsupported_clause(clause, keyword)
-        raise Herbst::UnsupportedError.new("`#{clause.value[:keyword]}` is not supported inside `#{keyword}`", clause.line)
       end
 
       #: (::Haml::Parser::ParseNode, Integer) -> (Herb::AST::HTMLElementNode | Array[Herb::AST::Node])
@@ -297,8 +176,6 @@ module Herbst
             text_nodes(value[:value])
           end
 
-        # A void element can't have children, so browsers (and Herb) read what Haml nests in one,
-        # as in `%br` followed by an indented line, as the element's next siblings.
         return [element(value[:name], attributes: attributes), *body] if Herb::HTML::Util.void_element?(value[:name]) && !body.empty?
 
         element(value[:name], attributes: attributes, body: body, self_closing: self_closing)
@@ -361,11 +238,6 @@ module Herbst
         yield
       ensure
         @nuke_inner.pop
-      end
-
-      #: (Integer) -> String
-      def newline(depth)
-        "\n#{INDENT * depth}"
       end
     end
   end
