@@ -7,6 +7,14 @@ require "herb/engine"
 class Herbst::Haml::RenderTest < Minitest::Spec
   include ConversionHelper
 
+  class ValueScope
+    attr_reader :value
+
+    def initialize(value)
+      @value = value
+    end
+  end
+
   class Scope
     def title = "Herbst <3"
     def name = "<World>"
@@ -48,7 +56,23 @@ class Herbst::Haml::RenderTest < Minitest::Spec
     end
   end
 
+  [
+    "%p{class: value}", ".a{class: value}", ".a.a{class: [value, \"a\"]}", "%p{class: [value, \"x\"]}", "%p(class=value)", "%p{id: value}", "#a{id: value}",
+    "%p{id: [value, \"x\"]}", "%p{class: value, id: value}", ".a{class: \"b\"}{class: value}", "%p{class: nil}", "%p{id: nil}", "%p{title: nil}", "%p{title: false}", "%p{title: true}"
+  ].each do |source|
+    it "renders `#{source}` like Haml" do
+      [nil, false, true, "", "x", "a<b", ["a", nil], [["b"], "c"]].each { |value| assert_renders_like_haml(source, value) }
+    end
+  end
+
   private
+
+  def assert_renders_like_haml(source, value)
+    expected = Haml::Template.new { source }.render(ValueScope.new(value))
+    actual = ValueScope.new(value).instance_eval(Herb::Engine.new(Herbst::Haml.to_erb(source), escape: true).src)
+
+    assert_equal normalize(expected), normalize(actual.force_encoding(Encoding::UTF_8))
+  end
 
   def normalize(html)
     html.gsub(/\s+/, " ").gsub(/>\s+/, ">").gsub(/\s+</, "<").strip

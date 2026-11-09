@@ -5,6 +5,8 @@ module Herbst
     class Attributes
       include Builder
 
+      ATTRIBUTE_VALUE: String
+
       @warnings: Array[String]
 
       # : (Array[String]) -> void
@@ -18,8 +20,23 @@ module Herbst
       # : (String, Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
       def compile_attribute: (String, Array[[ Symbol, untyped ]]) -> Array[Herb::AST::Node]
 
-      # : (String, Array[[Symbol, untyped]], String) { (String) -> String } -> Array[Herb::AST::Node]
-      def compile_joined: (String, Array[[ Symbol, untyped ]], String) { (String) -> String } -> Array[Herb::AST::Node]
+      # : (Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
+      def compile_class: (Array[[ Symbol, untyped ]]) -> Array[Herb::AST::Node]
+
+      # : (Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
+      def compile_id: (Array[[ Symbol, untyped ]]) -> Array[Herb::AST::Node]
+
+      # : (String) -> String
+      def single_class: (String) -> String
+
+      # : (Array[[Symbol, untyped]]) -> String
+      def merged_classes: (Array[[ Symbol, untyped ]]) -> String
+
+      # : (Array[[Symbol, untyped]]) -> String
+      def ruby_list: (Array[[ Symbol, untyped ]]) -> String
+
+      # : (Array[[Symbol, untyped]]) -> bool
+      def static?: (Array[[ Symbol, untyped ]]) -> bool
 
       # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
       def compile_hash: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
@@ -35,9 +52,6 @@ module Herbst
 
       # : (String) -> bool
       def literal?: (String) -> bool
-
-      # : (String) -> bool
-      def array_literal?: (String) -> bool
 
       # : (String) -> bool
       def boolean?: (String) -> bool
