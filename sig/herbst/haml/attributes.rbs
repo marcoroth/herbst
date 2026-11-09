@@ -27,6 +27,9 @@ module Herbst
       # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
       def compile_single: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
 
+      # : (String) -> Array[Herb::AST::Node]?
+      def split_interpolation: (String) -> Array[Herb::AST::Node]?
+
       # : (::Haml::Parser::ParseNode, Array[String]) -> Array[Herb::AST::Node]
       def fallback: (::Haml::Parser::ParseNode, Array[String]) -> Array[Herb::AST::Node]
 

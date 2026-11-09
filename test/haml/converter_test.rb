@@ -94,6 +94,31 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
     assert_equal %(<p data-a-b="1" data-c="<%= c %>"></p>\n), to_erb("%p{data: {a_b: 1, c: c}}")
   end
 
+  it "splits interpolated attribute strings into text and ERB" do
+    assert_equal %(<button onclick="remove(<%= m.id %>)"></button>\n), to_erb(%(%button{onclick: "remove(\#{m.id})"}))
+    assert_equal %(<a href="/a/<%= b %>/c/<%= d %>"></a>\n), to_erb(%(%a{href: "/a/\#{b}/c/\#{d}"}))
+    assert_equal %(<a title="<%= b("c") %>!"></a>\n), to_erb(%(%a{title: "\#{b("c")}!"}))
+    assert_equal %(<a title="<%= b %>"></a>\n), to_erb(%(%a{title: "\#{b}"}))
+  end
+
+  it "escapes the text of split attribute strings" do
+    assert_equal %(<a title="a&amp;b &quot;<%= c %>&quot;"></a>\n), to_erb(%(%a{title: "a&b \\"\#{c}\\""}))
+  end
+
+  it "splits interpolated strings in data attributes" do
+    assert_equal %(<a data-url="/a/<%= b %>"></a>\n), to_erb(%(%a{data: {url: "/a/\#{b}"}}))
+  end
+
+  it "keeps other attribute code as a single expression" do
+    assert_equal %(<a title="<%= foo("\#{b}") %>"></a>\n), to_erb(%(%a{title: foo("\#{b}")}))
+    assert_equal %(<a title="<%= "a\#{b}" + c %>"></a>\n), to_erb(%(%a{title: "a\#{b}" + c}))
+    assert_equal %(<a title="<%= %Q(a\#{b}) %>"></a>\n), to_erb(%(%a{title: %Q(a\#{b})}))
+    assert_equal %(<a title="<%= "a\#@b" %>"></a>\n), to_erb(%(%a{title: "a\#@b"}))
+    assert_equal %(<a title="<%= "\#{a; b}" %>"></a>\n), to_erb(%(%a{title: "\#{a; b}"}))
+    assert_equal %(<a class="<%= "a-\#{b}" %>"></a>\n), to_erb(%(%a{class: "a-\#{b}"}))
+    assert_equal %(<input <%= "disabled" if "\#{a}" %>>\n), to_erb(%(%input{disabled: "\#{a}"}))
+  end
+
   it "falls back to tag.attributes for splats" do
     converter = Herbst::Haml::Converter.new
     document = converter.convert("%p{**opts}")
