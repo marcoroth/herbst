@@ -330,17 +330,19 @@ module Herbst
       def convert_attributes(expression)
         values = Hash.new { |hash, key| hash[key] = [] } #: Hash[String, Array[untyped]]
         splats = [] #: Array[String]
+        attributes = expression.drop(2)
+        builder = attributes.any? { |attribute| attribute[1] == :splat || (HYPHEN_ATTRIBUTES.include?(attribute[2].to_s) && attribute[3][0] == :slim) }
 
-        expression.drop(2).each do |attribute|
+        attributes.each do |attribute|
           if attribute[1] == :splat
             splats << attribute[2]
           else
-            values[attribute[2].to_s] << attribute[3]
+            collect_attribute(values, attribute[2].to_s, attribute[3])
           end
         end
 
         nodes = values.keys.sort.flat_map do |name|
-          name == "class" ? convert_class(values.fetch(name)) : convert_attribute(name, values.fetch(name).fetch(-1))
+          name == "class" ? convert_class(values.fetch(name), builder) : convert_attribute(name, values.fetch(name).fetch(-1))
         end
 
         nodes + splats.map do |code|
@@ -349,9 +351,31 @@ module Herbst
         end
       end
 
-      #: (Array[untyped]) -> Array[Herb::AST::Node]
-      def convert_class(values)
-        parts = values.filter_map { |value| class_part(value) }
+      #: (Hash[String, Array[untyped]], String, untyped) -> void
+      def collect_attribute(values, name, value)
+        entries = value[0] == :slim && HYPHEN_ATTRIBUTES.include?(name) && value[3].strip.start_with?("{") ? hash_entries(value[3]) : nil
+
+        if entries
+          entries.each { |key, code| collect_entry(values, "#{name}-#{key}", value[2], code) }
+        else
+          values[name] << value
+        end
+      end
+
+      #: (Hash[String, Array[untyped]], String, bool, String) -> void
+      def collect_entry(values, name, escape, code)
+        entries = code.strip.start_with?("{") ? hash_entries(code) : nil
+
+        if entries
+          entries.each { |key, nested| collect_entry(values, "#{name}-#{key}", escape, nested) }
+        else
+          values[name] << [:herbst_entry, escape, code]
+        end
+      end
+
+      #: (Array[untyped], bool) -> Array[Herb::AST::Node]
+      def convert_class(values, builder)
+        parts = values.filter_map { |value| class_part(value, builder) }
         return [] if parts.empty?
         return [conditional_class(parts)] unless parts.first&.fetch(1)
 
@@ -378,25 +402,25 @@ module Herbst
         "unless (#{ATTRIBUTE_VALUE} = #{ruby}).empty?"
       end
 
-      #: (untyped) -> class_part?
-      def class_part(value)
+      #: (untyped, bool) -> class_part?
+      def class_part(value, builder)
         case value[0]
         when :static
           text = value[1].to_s
           [text.inspect, [literal(text)], "<%="] unless text.empty?
         when :escape
-          interpolated_class_part(value[2][2], value[1])
+          interpolated_class_part(value[2][2], value[1], builder)
         when :slim
-          code_class_part(value[3], value[2] ? "<%=" : "<%==")
+          code_class_part(value[3], value[2] ? "<%=" : "<%==", builder)
         end
       end
 
-      #: (String, bool) -> class_part?
-      def interpolated_class_part(string, escape)
+      #: (String, bool, bool) -> class_part?
+      def interpolated_class_part(string, escape, builder)
         nodes = attribute_value(string, escape)
-        return nil if nodes.empty?
+        return nil if nodes.empty? && !builder
 
-        [interpolated_source(string), nodes.any?(Herb::AST::LiteralNode) ? nodes : nil, escape ? "<%=" : "<%=="]
+        [interpolated_source(string), builder || nodes.any?(Herb::AST::LiteralNode) ? nodes : nil, escape ? "<%=" : "<%=="]
       end
 
       #: (String) -> String
@@ -406,15 +430,17 @@ module Herbst
         "\"#{parts.map { |part| part[0] == :static ? part[1].inspect[1..-2] : "\#{#{part[3]}}" }.join}\""
       end
 
-      #: (String, String) -> class_part?
-      def code_class_part(code, opening)
+      #: (String, String, bool) -> class_part?
+      def code_class_part(code, opening, builder)
         if Temple::StaticAnalyzer.static?(code)
-          text = static_class(code)
+          text = builder ? [eval(code)].join(" ") : static_class(code) # rubocop:disable Security/Eval
 
           return nil if text.empty?
 
           return [text.inspect, [literal(opening == "<%=" ? CGI.escapeHTML(text) : text)], opening]
         end
+
+        return ["[#{code}].join(\" \")", nil, opening] if builder
 
         list = code.strip.start_with?("[") ? code : "[#{code}]"
 
@@ -447,31 +473,22 @@ module Herbst
           [attribute(name, attribute_value(value[2][2], value[1]))]
         when :slim
           if HYPHEN_ATTRIBUTES.include?(name) && value[3].strip.start_with?("{")
-            convert_hash_attribute(name, value[2], value[3])
+            convert_hash_fallback(name, value[3])
           else
-            convert_code_attribute(name, value[2], value[3], conditional: true)
+            convert_code_attribute(name, value[2], value[3])
           end
+        when :herbst_entry
+          value[2].strip.start_with?("{") ? convert_hash_fallback(name, value[2]) : convert_code_attribute(name, value[1], value[2], entry: true)
         else
           unexpected(value)
         end
       end
 
-      #: (String, bool, String) -> Array[Herb::AST::Node]
-      def convert_hash_attribute(name, escape, code)
-        entries = hash_entries(code)
+      #: (String, String) -> Array[Herb::AST::Node]
+      def convert_hash_fallback(name, code)
+        warn(nil, "`#{name}=#{code}` was converted to `tag.attributes`, which requires Rails 7.1+")
 
-        unless entries
-          warn(nil, "`#{name}=#{code}` was converted to `tag.attributes`, which requires Rails 7.1+")
-          return [erb("tag.attributes(#{name}: #{code})")]
-        end
-
-        entries.flat_map do |key, value|
-          if value.strip.start_with?("{")
-            convert_hash_attribute("#{name}-#{key}", escape, value)
-          else
-            convert_code_attribute("#{name}-#{key}", escape, value)
-          end
-        end
+        [erb("tag.attributes(#{name}: #{code})")]
       end
 
       #: (String) -> Array[[String, String]]?
@@ -493,40 +510,59 @@ module Herbst
         entries
       end
 
-      #: (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
-      def convert_code_attribute(name, escape, code, conditional: false)
+      #: (String, bool, String, ?entry: bool) -> Array[Herb::AST::Node]
+      def convert_code_attribute(name, escape, code, entry: false)
         case code.strip
         when "true"
           [attribute(name)]
         when "false", "nil"
-          []
+          return [] unless entry
+
+          [attribute(name, [literal(code.strip == "false" ? "false" : "")])]
         else
           if Temple::StaticAnalyzer.static?(code)
             value = eval(code) # rubocop:disable Security/Eval
-            return convert_code_attribute(name, escape, value.inspect) if [true, false, nil].include?(value)
+            return convert_code_attribute(name, escape, value.inspect, entry: entry) if [true, false, nil].include?(value)
 
             return [attribute(name, [literal(escape ? CGI.escapeHTML(value.to_s) : value.to_s)])]
           end
 
           if Herb::HTML::Util.boolean_attribute?(name)
             [erb("#{name.inspect} if #{code}")]
-          elsif conditional
-            [conditional_attribute(name, code, escape ? "<%=" : "<%==")]
           else
-            [attribute(name, [erb(code, opening: escape ? "<%=" : "<%==")])]
+            [conditional_attribute(name, code, escape, expand: entry || HYPHEN_ATTRIBUTES.include?(name), always: entry)]
           end
         end
       end
 
-      #: (String, String, String) -> Herb::AST::ERBIfNode
-      def conditional_attribute(name, code, opening)
+      #: (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
+      def conditional_attribute(name, code, escape, expand:, always:)
         repeatable = repeatable?(code)
         value = repeatable ? code : ATTRIBUTE_VALUE
-        condition = repeatable ? "#{code} == true" : "(#{ATTRIBUTE_VALUE} = #{code}) == true"
+        bound = repeatable ? code : "(#{ATTRIBUTE_VALUE} = #{code})"
+        valued = [whitespace, attribute(name, [erb(value, opening: escape ? "<%=" : "<%==")])]
+        bare = [whitespace, attribute(name)]
+        present = always ? erb_else(valued) : erb_if("elsif #{value}", valued, end_node: nil)
 
-        present = erb_if("elsif #{value}", [whitespace, attribute(name, [erb(value, opening: opening)])], end_node: nil)
+        return erb_if("if #{bound} == true", bare, subsequent: present) unless expand
 
-        erb_if("if #{condition}", [whitespace, attribute(name)], subsequent: present)
+        expansion = erb(hash_expansion(name, value, escape), opening: "<%==") #: Herb::AST::ERBContentNode
+
+        erb_if(
+          "if #{bound}.is_a?(Hash)",
+          [whitespace, attribute(expansion)],
+          subsequent: erb_if("elsif #{value} == true", bare, subsequent: present, end_node: nil)
+        )
+      end
+
+      #: (String, String, bool) -> String
+      def hash_expansion(name, value, escape)
+        output = escape ? "ERB::Util.html_escape(value)" : "value"
+        expansion = "(_herbst_expand = ->(name, value) { value.is_a?(Hash) ? value.flat_map { |key, nested| _herbst_expand.call(\"\#{name}-\#{key}\", nested) } : [[name, value]] })"
+        rendered = "value == true ? name : \"\#{name}=\\\"\#{#{output}}\\\"\""
+        joined = "#{expansion}.call(#{name.inspect}, #{value}).sort_by(&:first).map { |name, value| #{rendered} }.join(\" \")"
+
+        escape ? "(require \"erb\"; #{joined})" : joined
       end
 
       #: (String) -> bool

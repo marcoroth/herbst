@@ -70,6 +70,36 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     end
   end
 
+  [
+    "p data=value", "p aria=value", "p data=value class=value", "p data=value class=[value, nil]", ".a data=value class=value", "p data=value title=value",
+    "p aria=value class=value", "p data={a: value}", "p data={a: {b: value}}", "p aria={a: value}", "p data={b: value, a: value}", "p data={b: value} id=\"a\"",
+    "p data={a: value} class=[value, nil]", "p data={a: nil}", "p data={a: false}", "p data={a: true}", "p data=value class=\"\#{value}\"", "p data=value class=\"\""
+  ].each do |source|
+    it "renders `#{source}` like Slim" do
+      [nil, false, true, "", "x", "a<b", ["a", nil], { z: 1, a: "<" }, { a_b: { c: nil } }].each do |value|
+        assert_renders_like_slim(source, value)
+      end
+    end
+  end
+
+  it "renders raw data hashes like Slim" do
+    [{ a: "<b>" }, { a: { b_c: "&" } }, true, nil].each { |value| assert_renders_like_slim("p data==value", value) }
+  end
+
+  it "renders static classes next to a data attribute like Slim" do
+    [nil, "x", { a: 1 }].each do |value|
+      assert_renders_like_slim(%(p data=value class=["a", nil]), value)
+      assert_renders_like_slim(%(p data=value class=["a", ""] class=nil), value)
+    end
+  end
+
+  it "renders a runtime data hash before explicit data attributes, where Slim sorts them together" do
+    source = %(p data=value data-b="x")
+
+    assert_equal %(<p data-a="1" data-b="x" data-c="2"></p>), Slim::Template.new(format: :html) { source }.render(ValueScope.new({ a: 1, c: 2 }))
+    assert_equal %(<p data-a="1" data-c="2" data-b="x"></p>), ValueScope.new({ a: 1, c: 2 }).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
+  end
+
   it "evaluates attribute code once like Slim" do
     ["p title=values.shift", "p title=shift_value"].each do |source|
       expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new([nil, "b"]))

@@ -91,7 +91,10 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "expands data and aria hashes like Slim" do
-    assert_equal %(<p data-action="click" data-user_id="<%= user.id %>"></p>), slim_to_erb(%(p data={ action: "click", user_id: user.id }))
+    erb = slim_to_erb(%(p data={ action: "click", user_id: user.id }))
+
+    assert_includes erb, %(<p data-action="click"<% if (_herbst_attribute = user.id).is_a?(Hash) %> <%== )
+    assert_includes erb, %(<% else %> data-user_id="<%= _herbst_attribute %>"<% end %>></p>)
     assert_equal %(<p aria-label="x" data-a-b="1"></p>), slim_to_erb(%(p aria={ label: "x" } data={ a: { b: 1 } }))
   end
 
@@ -131,8 +134,7 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
     assert_equal expected, slim_to_erb("a.b href=@c title=@d")
   end
 
-  it "does not wrap hash entries or quoted attributes" do
-    assert_equal %(<p data-a="<%= b %>"></p>), slim_to_erb("p data={a: b}")
+  it "does not wrap quoted attributes" do
     assert_equal %(<p title="<%= b %>"></p>), slim_to_erb(%(p title="\#{b}"))
   end
 
@@ -143,6 +145,21 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
     assert_equal %(<p#{raw}></p>), slim_to_erb("p class==@a")
     assert_includes slim_to_erb("p class==@a class==@b"), %(#{merged} class="<%== _herbst_attribute %>")
     assert_includes slim_to_erb("p class=@a class==@b"), %(#{merged} class="<%= _herbst_attribute %>")
+  end
+
+  it "joins classes like Slim's splat builder when a tag has a splat" do
+    assert_includes slim_to_erb("p *a class=@v"), %(<% unless (_herbst_attribute = [@v].join(" ")).empty? %>)
+  end
+
+  it "falls back to tag.attributes for data hashes it cannot read" do
+    converter = Herbst::Slim::Converter.new
+
+    assert_equal %(<p <%= tag.attributes(data: {**x}) %>></p>), Herbst::Printer.print(converter.convert("p data={**x}"), format: false)
+    assert_equal %(<p <%= tag.attributes(data-a: {**x}) %>></p>), Herbst::Printer.print(converter.convert("p data={a: {**x}}"), format: false)
+    assert_equal [
+      "`data={**x}` was converted to `tag.attributes`, which requires Rails 7.1+",
+      "`data-a={**x}` was converted to `tag.attributes`, which requires Rails 7.1+"
+    ], converter.warnings
   end
 
   it "falls back to tag.attributes for splats" do
