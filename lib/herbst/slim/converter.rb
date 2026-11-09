@@ -21,7 +21,9 @@ module Herbst
 
       #: (String) -> Herb::AST::DocumentNode
       def convert(source)
-        expression = ::Slim::Parser.new(@options).call(source)
+        parser = Parser.new(@options)
+        expression = parser.call(source)
+        parser.dropped_directives.each { |line, directive| warn_dropped_directive(line, directive) }
         children = join(prepare([expression]), 0)
 
         finish(document(children))
@@ -30,6 +32,11 @@ module Herbst
       end
 
       private
+
+      #: (Integer, String) -> void
+      def warn_dropped_directive(line, directive)
+        warn(line, "`/ #{directive}` is a Slim comment, which is dropped when parsing. Use `-# #{directive}` to keep the directive")
+      end
 
       #: (Array[untyped]) -> Array[untyped]
       def prepare(expressions)

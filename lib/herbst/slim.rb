@@ -27,4 +27,5 @@ module Herbst
   end
 end
 
+require_relative "slim/parser"
 require_relative "slim/converter"

@@ -15,6 +15,9 @@ module Herbst
 
       private
 
+      # : (Integer, String) -> void
+      def warn_dropped_directive: (Integer, String) -> void
+
       # : (Array[untyped]) -> Array[untyped]
       def prepare: (Array[untyped]) -> Array[untyped]
 
