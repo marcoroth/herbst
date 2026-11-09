@@ -3,6 +3,8 @@
 module Herbst
   module Slim
     class Converter < Herbst::Converter
+      type class_part = [ String, Array[Herb::AST::Node]?, String ]
+
       HYPHEN_ATTRIBUTES: Array[String]
 
       ATTRIBUTE_VALUE: String
@@ -103,8 +105,23 @@ module Herbst
       # : (Array[untyped]) -> Array[Herb::AST::Node]
       def convert_class: (Array[untyped]) -> Array[Herb::AST::Node]
 
-      # : (untyped) -> Array[Herb::AST::Node]
-      def class_value: (untyped) -> Array[Herb::AST::Node]
+      # : (Array[class_part]) -> Herb::AST::ERBUnlessNode
+      def conditional_class: (Array[class_part]) -> Herb::AST::ERBUnlessNode
+
+      # : (String) -> String
+      def class_condition: (String) -> String
+
+      # : (untyped) -> class_part?
+      def class_part: (untyped) -> class_part?
+
+      # : (String, bool) -> class_part?
+      def interpolated_class_part: (String, bool) -> class_part?
+
+      # : (String) -> String
+      def interpolated_source: (String) -> String
+
+      # : (String, String) -> class_part?
+      def code_class_part: (String, String) -> class_part?
 
       # : (String, bool) -> Array[Herb::AST::Node]
       def attribute_value: (String, bool) -> Array[Herb::AST::Node]

@@ -103,9 +103,10 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "merges classes" do
-    assert_equal %(<p class="a <%= b %>"></p>), slim_to_erb("p.a class=b")
+    assert_equal %(<p class="a<% unless (_herbst_attribute = [b].flatten.map(&:to_s).reject(&:empty?).join(" ")).empty? %> <%= _herbst_attribute %><% end %>"></p>), slim_to_erb("p.a class=b")
     assert_equal %(<p class="a b c"></p>), slim_to_erb(%(p.a class=["b", "c"]))
-    assert_equal %(<p class="<%= [b, "c"].flatten.map(&:to_s).reject(&:empty?).join(" ") %>"></p>), slim_to_erb(%(p class=[b, "c"]))
+    assert_equal %(<p<% unless (_herbst_attribute = [b, "c"].flatten.map(&:to_s).reject(&:empty?).join(" ")).empty? %> class="<%= _herbst_attribute %>"<% end %>></p>), slim_to_erb(%(p class=[b, "c"]))
+    assert_equal %(<p></p>), slim_to_erb(%(p class=nil))
   end
 
   it "wraps dynamic attributes so falsy values omit them" do
@@ -128,6 +129,15 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   it "does not wrap hash entries or quoted attributes" do
     assert_equal %(<p data-a="<%= b %>"></p>), slim_to_erb("p data={a: b}")
     assert_equal %(<p title="<%= b %>"></p>), slim_to_erb(%(p title="\#{b}"))
+  end
+
+  it "keeps raw output for raw class values" do
+    raw = %(<% unless (_herbst_attribute = [@a].flatten.map(&:to_s).reject(&:empty?).join(" ")).empty? %> class="<%== _herbst_attribute %>"<% end %>)
+    merged = %(<% unless (_herbst_attribute = [[@a].flatten.map(&:to_s).reject(&:empty?).join(" "), [@b].flatten.map(&:to_s).reject(&:empty?).join(" ")].reject(&:empty?).join(" ")).empty? %>)
+
+    assert_equal %(<p#{raw}></p>), slim_to_erb("p class==@a")
+    assert_includes slim_to_erb("p class==@a class==@b"), %(#{merged} class="<%== _herbst_attribute %>")
+    assert_includes slim_to_erb("p class=@a class==@b"), %(#{merged} class="<%= _herbst_attribute %>")
   end
 
   it "falls back to tag.attributes for splats" do

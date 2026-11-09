@@ -50,6 +50,24 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     assert_equal %(<p title="a&lt;b"></p>), ValueScope.new("a<b").instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
   end
 
+  [
+    "p class=value", ".a class=value", ".a.b class=value class=value", "p class=value class=\"z\"", "p class=value class=value",
+    "p class=\"\#{value}\"", ".a class=\"\#{value}\"", "p class=\"b \#{value}\"", "p class=\"\#{value}\" class=value", "p class=[value, \"c\"]",
+    "p class=value id=\"a\"", "p class=nil", ".a class=\"\""
+  ].each do |source|
+    it "renders `#{source}` like Slim" do
+      [nil, false, true, "", "x", "a<b", [], ["a", nil, ""], [["b"], "c"]].each do |value|
+        assert_renders_like_slim(source, value)
+      end
+    end
+  end
+
+  ["p class=(\"a&b\")", "p class==(\"a&b\")", "p.c class==(\"a&b\")", "p.c class=(\"a&b\")"].each do |source|
+    it "renders the static class `#{source}` like Slim" do
+      assert_renders_like_slim(source, nil)
+    end
+  end
+
   it "evaluates attribute code once like Slim" do
     source = "p title=values.shift"
 
