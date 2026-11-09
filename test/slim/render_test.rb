@@ -26,6 +26,8 @@ class Herbst::Slim::RenderTest < Minitest::Spec
       @value = value
       @values = value
     end
+
+    def shift_value = values.shift
   end
 
   it "renders page.slim like Slim" do
@@ -69,12 +71,12 @@ class Herbst::Slim::RenderTest < Minitest::Spec
   end
 
   it "evaluates attribute code once like Slim" do
-    source = "p title=values.shift"
+    ["p title=values.shift", "p title=shift_value"].each do |source|
+      expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new([nil, "b"]))
+      actual = ValueScope.new([nil, "b"]).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
 
-    expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new([nil, "b"]))
-    actual = ValueScope.new([nil, "b"]).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
-
-    assert_equal expected, actual
+      assert_equal expected, actual
+    end
   end
 
   private

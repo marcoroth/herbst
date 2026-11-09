@@ -96,7 +96,7 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "converts attributes like Slim" do
-    assert_equal %(<a<% if url == true %> href<% elsif url %> href="<%= url %>"<% end %> title="A &amp; B">x</a>), slim_to_erb(%(a href=url title="A & B" x))
+    assert_equal %(<a<% if (_herbst_attribute = url) == true %> href<% elsif _herbst_attribute %> href="<%= _herbst_attribute %>"<% end %> title="A &amp; B">x</a>), slim_to_erb(%(a href=url title="A & B" x))
     assert_equal %(<input checked type="checkbox">), slim_to_erb(%(input type="checkbox" checked=true disabled=false))
     assert_equal %(<input <%= "disabled" if off %>>), slim_to_erb("input disabled=off")
     assert_equal %(<p data-id="1"></p>), slim_to_erb("p data-id=1")
@@ -110,8 +110,13 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "wraps dynamic attributes so falsy values omit them" do
-    assert_equal %(<p<% if a == true %> title<% elsif a %> title="<%= a %>"<% end %>></p>), slim_to_erb("p title=a")
+    assert_equal %(<p<% if (_herbst_attribute = a) == true %> title<% elsif _herbst_attribute %> title="<%= _herbst_attribute %>"<% end %>></p>), slim_to_erb("p title=a")
     assert_equal %(<p<% if @a == true %> title<% elsif @a %> title="<%== @a %>"<% end %>></p>), slim_to_erb("p title==@a")
+  end
+
+  it "repeats only names declared as state or locals" do
+    assert_equal %(<%# herb:state (a: 0) %>\n<p<% if a == true %> title<% elsif a %> title="<%= a %>"<% end %>></p>), slim_to_erb("-# herb:state (a: 0)\np title=a")
+    assert_equal %(<%# locals: (a:) %>\n<p<% if a == true %> title<% elsif a %> title="<%= a %>"<% end %>></p>), slim_to_erb("-# locals: (a:)\np title=a")
   end
 
   it "evaluates attribute code that cannot be repeated once" do
@@ -121,9 +126,9 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "keeps the spacing around wrapped attributes" do
-    expected = %(<a class="b"<% if c == true %> href<% elsif c %> href="<%= c %>"<% end %><% if d == true %> title<% elsif d %> title="<%= d %>"<% end %>></a>)
+    expected = %(<a class="b"<% if @c == true %> href<% elsif @c %> href="<%= @c %>"<% end %><% if @d == true %> title<% elsif @d %> title="<%= @d %>"<% end %>></a>)
 
-    assert_equal expected, slim_to_erb("a.b href=c title=d")
+    assert_equal expected, slim_to_erb("a.b href=@c title=@d")
   end
 
   it "does not wrap hash entries or quoted attributes" do
