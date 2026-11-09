@@ -5,11 +5,7 @@ module Herbst
     class Converter < Herbst::Converter
       type class_part = [ String, Array[Herb::AST::Node]?, String ]
 
-      DECLARATION: Regexp
-
       HYPHEN_ATTRIBUTES: Array[String]
-
-      ATTRIBUTE_VALUE: String
 
       @declared: Array[Symbol]
 
@@ -22,9 +18,6 @@ module Herbst
       def convert: (String) -> Herb::AST::DocumentNode
 
       private
-
-      # : (String) -> Array[Symbol]
-      def declared_names: (String) -> Array[Symbol]
 
       # : (Integer, String) -> void
       def warn_dropped_directive: (Integer, String) -> void
@@ -153,15 +146,6 @@ module Herbst
 
       # : (String, bool, String, ?entry: bool) -> Array[Herb::AST::Node]
       def convert_code_attribute: (String, bool, String, ?entry: bool) -> Array[Herb::AST::Node]
-
-      # : (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
-      def conditional_attribute: (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
-
-      # : (String, String, bool) -> String
-      def hash_expansion: (String, String, bool) -> String
-
-      # : (String) -> bool
-      def repeatable?: (String) -> bool
     end
   end
 end

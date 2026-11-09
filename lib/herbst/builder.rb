@@ -6,6 +6,8 @@ require "prism"
 
 module Herbst
   module Builder
+    ATTRIBUTE_VALUE = "_herbst_attribute" #: String
+
     #: (String, String) -> Herb::Token
     def token(type, value)
       Herb::Token.from(type, value)
@@ -245,6 +247,46 @@ module Herbst
       )
     end
 
+    #: (String, String, bool, declared: Array[Symbol], ?expansion: Symbol?, ?always: bool) -> Herb::AST::ERBIfNode
+    def conditional_attribute(name, code, escape, declared:, expansion: nil, always: false)
+      repeatable = repeatable?(code, declared)
+      value = repeatable ? code : ATTRIBUTE_VALUE
+      bound = repeatable ? code : "(#{ATTRIBUTE_VALUE} = #{code})"
+      valued = [whitespace, attribute(name, [erb(value, opening: escape ? "<%=" : "<%==")])]
+      bare = [whitespace, attribute(name)]
+      present = always ? erb_else(valued) : erb_if("elsif #{value}", valued, end_node: nil)
+
+      return erb_if("if #{bound} == true", bare, subsequent: present) unless expansion
+
+      expanded = erb(hash_expansion(name, value, escape, expansion), opening: "<%==") #: Herb::AST::ERBContentNode
+
+      erb_if(
+        "if #{bound}.is_a?(Hash)",
+        [whitespace, attribute(expanded)],
+        subsequent: erb_if("elsif #{value} == true", bare, subsequent: present, end_node: nil)
+      )
+    end
+
+    #: (String, String, bool, Symbol) -> String
+    def hash_expansion(name, value, escape, expansion)
+      output = escape ? "ERB::Util.html_escape(value)" : "value"
+      key = expansion == :haml ? "\#{key.to_s.tr(\"_\", \"-\")}" : "\#{key}"
+      leaf = expansion == :haml ? "value ? [[name, value]] : []" : "[[name, value]]"
+      expand = "(_herbst_expand = ->(name, value) { value.is_a?(Hash) ? value.flat_map { |key, nested| _herbst_expand.call(\"\#{name}-#{key}\", nested) } : #{leaf} })"
+      rendered = "value == true ? name : \"\#{name}=\\\"\#{#{output}}\\\"\""
+      joined = "#{expand}.call(#{name.inspect}, #{value}).sort_by(&:first).map { |name, value| #{rendered} }.join(\" \")"
+
+      escape ? "(require \"erb\"; #{joined})" : joined
+    end
+
+    #: (String, Array[Symbol]) -> bool
+    def repeatable?(code, declared)
+      statements = Prism.parse(code).value.statements.body
+      node = statements.first
+
+      statements.one? && (node.is_a?(Prism::InstanceVariableReadNode) || (node.is_a?(Prism::CallNode) && node.variable_call? && declared.include?(node.name)))
+    end
+
     #: (Array[Herb::AST::Node]) -> Herb::AST::HTMLCommentNode
     def comment(children)
       children = children.map { |node| node.is_a?(Herb::AST::HTMLTextNode) ? literal(node.content.to_s) : node }
@@ -291,7 +333,8 @@ module Herbst
     #: (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
     def open_tag_children(attributes)
       attributes.each_with_index.flat_map do |node, index|
-        next [node] if node.is_a?(Herb::AST::ERBIfNode) || node.is_a?(Herb::AST::ERBUnlessNode)
+        next [node] if conditional_attribute?(node)
+        next [erb_if("if true", [whitespace, node])] if node.is_a?(Herb::AST::HTMLAttributeNode) && !node.equals && conditional_attribute?(attributes[index + 1])
 
         # Herb reads ERB in an open tag as an attribute name when an attribute with a value follows it.
         valued = attributes.drop(index + 1).any? { |following| following.is_a?(Herb::AST::HTMLAttributeNode) && following.equals }
@@ -302,6 +345,11 @@ module Herbst
           [whitespace, node]
         end
       end
+    end
+
+    #: (Herb::AST::Node?) -> bool
+    def conditional_attribute?(node)
+      node.is_a?(Herb::AST::ERBIfNode) || node.is_a?(Herb::AST::ERBUnlessNode)
     end
 
     #: [T < Herb::AST::Node] (T) -> T

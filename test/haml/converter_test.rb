@@ -86,12 +86,15 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
   end
 
   it "converts boolean attributes" do
-    assert_equal %(<input checked <%= "disabled" if d %>>\n),
+    assert_equal %(<input<% if true %> checked<% end %><% if (_herbst_attribute = d) == true %> disabled<% elsif _herbst_attribute %> disabled="<%= _herbst_attribute %>"<% end %>>\n),
                  to_erb("%input{checked: true, disabled: d, required: false}")
   end
 
   it "expands data attributes" do
-    assert_equal %(<p data-a-b="1" data-c="<%= c %>"></p>\n), to_erb("%p{data: {a_b: 1, c: c}}")
+    erb = to_erb("%p{data: {a_b: 1, c: c}}")
+
+    assert_includes erb, %(<p data-a-b="1"<% if (_herbst_attribute = c).is_a?(Hash) %> <%== )
+    assert_includes erb, %(<% elsif _herbst_attribute %> data-c="<%= _herbst_attribute %>"<% end %>></p>)
   end
 
   it "splits interpolated attribute strings into text and ERB" do
@@ -115,7 +118,7 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
     assert_equal %(<a title="<%= %Q(a\#{b}) %>"></a>\n), to_erb(%(%a{title: %Q(a\#{b})}))
     assert_equal %(<a title="<%= "a\#@b" %>"></a>\n), to_erb(%(%a{title: "a\#@b"}))
     assert_equal %(<a title="<%= "\#{a; b}" %>"></a>\n), to_erb(%(%a{title: "\#{a; b}"}))
-    assert_equal %(<input <%= "disabled" if "\#{a}" %>>\n), to_erb(%(%input{disabled: "\#{a}"}))
+    assert_equal %(<input disabled="<%= a %>">\n), to_erb(%(%input{disabled: "\#{a}"}))
   end
 
   it "falls back to tag.attributes for splats" do
@@ -124,6 +127,12 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
 
     assert_equal %(<p <%= tag.attributes(**opts) %>></p>\n), Herbst::Printer.print(document, format: false)
     assert_equal 1, converter.warnings.size
+  end
+
+  it "repeats only names declared as state or locals" do
+    assert_equal %(<%# herb:state (a: 0) %>\n<input<% if a == true %> disabled<% elsif a %> disabled="<%= a %>"<% end %>>\n), to_erb("-# herb:state (a: 0)\n%input{disabled: a}")
+    assert_equal %(<%# locals: (a:) %>\n<input<% if a == true %> disabled<% elsif a %> disabled="<%= a %>"<% end %>>\n), to_erb("-# locals: (a:)\n%input{disabled: a}")
+    assert_equal %(<input<% if (_herbst_attribute = a) == true %> disabled<% elsif _herbst_attribute %> disabled="<%= _herbst_attribute %>"<% end %>>\n), to_erb("%input{disabled: a}")
   end
 
   it "converts html and haml comments" do
@@ -196,7 +205,7 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
   end
 
   it "keeps a data value that isn't a hash literal as one attribute" do
-    assert_equal %(<p data-a="<%= {b: 1}.to_json %>"></p>\n), to_erb("%p{data: {a: {b: 1}.to_json}}")
+    assert_includes to_erb("%p{data: {a: {b: 1}.to_json}}"), %( data-a="<%= _herbst_attribute %>")
   end
 
   it "only gives a block parameters when its call is the first statement" do
@@ -204,7 +213,7 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
   end
 
   it "reads ERB in an open tag as an attribute name when a valued attribute follows" do
-    assert_equal %(<input <%= "checked" if c %> data-autosubmit name="x">\n), to_erb(%(%input{checked: c, data: {autosubmit: true}, name: "x"}))
+    assert_equal %(<input<% if (_herbst_attribute = c) == true %> checked<% elsif _herbst_attribute %> checked="<%= _herbst_attribute %>"<% end %> data-autosubmit name="x">\n), to_erb(%(%input{checked: c, data: {autosubmit: true}, name: "x"}))
   end
 
   it "converts filters" do

@@ -65,6 +65,15 @@ class Herbst::Haml::RenderTest < Minitest::Spec
     end
   end
 
+  [
+    "%p{data: value}", "%p{aria: value}", "%p{data: {a: value}}", "%p{data: {a_b: value}}", "%p{data: {a: {b: value}}}", "%p{aria: {a: value}}", "%p{data: nil}", "%p{data: true}",
+    "%p{\"data-a\": value}", "%input{disabled: value}", "%input{checked: true, disabled: value}", "%input{checked: value, type: \"a\"}", "%p(disabled=value)", "%input{disabled: \"\#{value}\"}"
+  ].each do |source|
+    it "renders `#{source}` like Haml" do
+      [nil, false, true, "", "x", "a<b", ["a", nil], { z: 1, a_b: "<" }, { a: { c: nil, d: true } }].each { |value| assert_renders_like_haml(source, value) }
+    end
+  end
+
   private
 
   def assert_renders_like_haml(source, value)

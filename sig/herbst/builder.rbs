@@ -2,6 +2,8 @@
 
 module Herbst
   module Builder
+    ATTRIBUTE_VALUE: String
+
     # : (String, String) -> Herb::Token
     def token: (String, String) -> Herb::Token
 
@@ -80,6 +82,15 @@ module Herbst
     # : (String | Herb::AST::ERBContentNode, ?Array[Herb::AST::Node]?) -> Herb::AST::HTMLAttributeNode
     def attribute: (String | Herb::AST::ERBContentNode, ?Array[Herb::AST::Node]?) -> Herb::AST::HTMLAttributeNode
 
+    # : (String, String, bool, declared: Array[Symbol], ?expansion: Symbol?, ?always: bool) -> Herb::AST::ERBIfNode
+    def conditional_attribute: (String, String, bool, declared: Array[Symbol], ?expansion: Symbol?, ?always: bool) -> Herb::AST::ERBIfNode
+
+    # : (String, String, bool, Symbol) -> String
+    def hash_expansion: (String, String, bool, Symbol) -> String
+
+    # : (String, Array[Symbol]) -> bool
+    def repeatable?: (String, Array[Symbol]) -> bool
+
     # : (Array[Herb::AST::Node]) -> Herb::AST::HTMLCommentNode
     def comment: (Array[Herb::AST::Node]) -> Herb::AST::HTMLCommentNode
 
@@ -94,6 +105,9 @@ module Herbst
 
     # : (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
     def open_tag_children: (Array[Herb::AST::Node]) -> Array[Herb::AST::Node]
+
+    # : (Herb::AST::Node?) -> bool
+    def conditional_attribute?: (Herb::AST::Node?) -> bool
 
     # : [T < Herb::AST::Node] (T) -> T
     def merge_texts!: [T < Herb::AST::Node] (T) -> T
