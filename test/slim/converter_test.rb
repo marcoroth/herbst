@@ -101,7 +101,7 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   it "converts attributes like Slim" do
     assert_equal %(<a<% if (_herbst_attribute = url) == true %> href<% elsif _herbst_attribute %> href="<%= _herbst_attribute %>"<% end %> title="A &amp; B">x</a>), slim_to_erb(%(a href=url title="A & B" x))
     assert_equal %(<input checked type="checkbox">), slim_to_erb(%(input type="checkbox" checked=true disabled=false))
-    assert_equal %(<input <%= "disabled" if off %>>), slim_to_erb("input disabled=off")
+    assert_equal %(<input<% if (_herbst_attribute = off) == true %> disabled<% elsif _herbst_attribute %> disabled="<%= _herbst_attribute %>"<% end %>>), slim_to_erb("input disabled=off")
     assert_equal %(<p data-id="1"></p>), slim_to_erb("p data-id=1")
   end
 

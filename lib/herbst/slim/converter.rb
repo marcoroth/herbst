@@ -527,11 +527,7 @@ module Herbst
             return [attribute(name, [literal(escape ? CGI.escapeHTML(value.to_s) : value.to_s)])]
           end
 
-          if Herb::HTML::Util.boolean_attribute?(name)
-            [erb("#{name.inspect} if #{code}")]
-          else
-            [conditional_attribute(name, code, escape, expand: entry || HYPHEN_ATTRIBUTES.include?(name), always: entry)]
-          end
+          [conditional_attribute(name, code, escape, expand: entry || HYPHEN_ATTRIBUTES.include?(name), always: entry)]
         end
       end
 
