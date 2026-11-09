@@ -9,6 +9,7 @@ module Herbst
   module Slim
     class Converter < Herbst::Converter
       HYPHEN_ATTRIBUTES = ["data", "aria"].freeze #: Array[String]
+      ATTRIBUTE_VALUE = "_herbst_attribute" #: String
 
       # @rbs @options: Hash[Symbol, untyped]
 
@@ -388,7 +389,7 @@ module Herbst
           if HYPHEN_ATTRIBUTES.include?(name) && value[3].strip.start_with?("{")
             convert_hash_attribute(name, value[2], value[3])
           else
-            convert_code_attribute(name, value[2], value[3])
+            convert_code_attribute(name, value[2], value[3], conditional: true)
           end
         else
           unexpected(value)
@@ -432,8 +433,8 @@ module Herbst
         entries
       end
 
-      #: (String, bool, String) -> Array[Herb::AST::Node]
-      def convert_code_attribute(name, escape, code)
+      #: (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
+      def convert_code_attribute(name, escape, code, conditional: false)
         case code.strip
         when "true"
           [attribute(name)]
@@ -449,10 +450,31 @@ module Herbst
 
           if Herb::HTML::Util.boolean_attribute?(name)
             [erb("#{name.inspect} if #{code}")]
+          elsif conditional
+            [conditional_attribute(name, code, escape ? "<%=" : "<%==")]
           else
             [attribute(name, [erb(code, opening: escape ? "<%=" : "<%==")])]
           end
         end
+      end
+
+      #: (String, String, String) -> Herb::AST::ERBIfNode
+      def conditional_attribute(name, code, opening)
+        repeatable = repeatable?(code)
+        value = repeatable ? code : ATTRIBUTE_VALUE
+        condition = repeatable ? "#{code} == true" : "(#{ATTRIBUTE_VALUE} = #{code}) == true"
+
+        present = erb_if("elsif #{value}", [whitespace, attribute(name, [erb(value, opening: opening)])], end_node: nil)
+
+        erb_if("if #{condition}", [whitespace, attribute(name)], subsequent: present)
+      end
+
+      #: (String) -> bool
+      def repeatable?(code)
+        statements = Prism.parse(code).value.statements.body
+        node = statements.first
+
+        statements.one? && (node.is_a?(Prism::InstanceVariableReadNode) || (node.is_a?(Prism::CallNode) && node.variable_call?))
       end
     end
   end

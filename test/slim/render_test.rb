@@ -19,6 +19,15 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     def risky = raise("boom & bust")
   end
 
+  class ValueScope
+    attr_reader :values, :value
+
+    def initialize(value)
+      @value = value
+      @values = value
+    end
+  end
+
   it "renders page.slim like Slim" do
     source = File.read(File.join(SLIM_FIXTURES, "page.slim"))
 
@@ -28,7 +37,36 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     assert_equal without_block_whitespace(expected), without_block_whitespace(actual.force_encoding(Encoding::UTF_8))
   end
 
+  [nil, false, true, "", "a<b"].each do |value|
+    it "renders dynamic attributes like Slim for #{value.inspect}" do
+      assert_renders_like_slim("p.a title=value id=value href=@value data-b=value", value)
+    end
+  end
+
+  it "renders raw dynamic attributes escaped, since Herb escapes all attribute output" do
+    source = "p title==value"
+
+    assert_equal %(<p title="a<b"></p>), Slim::Template.new(format: :html) { source }.render(ValueScope.new("a<b"))
+    assert_equal %(<p title="a&lt;b"></p>), ValueScope.new("a<b").instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
+  end
+
+  it "evaluates attribute code once like Slim" do
+    source = "p title=values.shift"
+
+    expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new([nil, "b"]))
+    actual = ValueScope.new([nil, "b"]).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
+
+    assert_equal expected, actual
+  end
+
   private
+
+  def assert_renders_like_slim(source, value)
+    expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new(value))
+    actual = ValueScope.new(value).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
+
+    assert_equal expected, actual.force_encoding(Encoding::UTF_8)
+  end
 
   def without_block_whitespace(html)
     parts = html.split(/(<[^>]*>)/)

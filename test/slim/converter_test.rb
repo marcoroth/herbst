@@ -96,7 +96,7 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
   end
 
   it "converts attributes like Slim" do
-    assert_equal %(<a href="<%= url %>" title="A &amp; B">x</a>), slim_to_erb(%(a href=url title="A & B" x))
+    assert_equal %(<a<% if url == true %> href<% elsif url %> href="<%= url %>"<% end %> title="A &amp; B">x</a>), slim_to_erb(%(a href=url title="A & B" x))
     assert_equal %(<input checked type="checkbox">), slim_to_erb(%(input type="checkbox" checked=true disabled=false))
     assert_equal %(<input <%= "disabled" if off %>>), slim_to_erb("input disabled=off")
     assert_equal %(<p data-id="1"></p>), slim_to_erb("p data-id=1")
@@ -106,6 +106,28 @@ class Herbst::Slim::ConverterTest < Minitest::Spec
     assert_equal %(<p class="a <%= b %>"></p>), slim_to_erb("p.a class=b")
     assert_equal %(<p class="a b c"></p>), slim_to_erb(%(p.a class=["b", "c"]))
     assert_equal %(<p class="<%= [b, "c"].flatten.map(&:to_s).reject(&:empty?).join(" ") %>"></p>), slim_to_erb(%(p class=[b, "c"]))
+  end
+
+  it "wraps dynamic attributes so falsy values omit them" do
+    assert_equal %(<p<% if a == true %> title<% elsif a %> title="<%= a %>"<% end %>></p>), slim_to_erb("p title=a")
+    assert_equal %(<p<% if @a == true %> title<% elsif @a %> title="<%== @a %>"<% end %>></p>), slim_to_erb("p title==@a")
+  end
+
+  it "evaluates attribute code that cannot be repeated once" do
+    expected = %(<p<% if (_herbst_attribute = a.b(1)) == true %> title<% elsif _herbst_attribute %> title="<%= _herbst_attribute %>"<% end %>></p>)
+
+    assert_equal expected, slim_to_erb("p title=a.b(1)")
+  end
+
+  it "keeps the spacing around wrapped attributes" do
+    expected = %(<a class="b"<% if c == true %> href<% elsif c %> href="<%= c %>"<% end %><% if d == true %> title<% elsif d %> title="<%= d %>"<% end %>></a>)
+
+    assert_equal expected, slim_to_erb("a.b href=c title=d")
+  end
+
+  it "does not wrap hash entries or quoted attributes" do
+    assert_equal %(<p data-a="<%= b %>"></p>), slim_to_erb("p data={a: b}")
+    assert_equal %(<p title="<%= b %>"></p>), slim_to_erb(%(p title="\#{b}"))
   end
 
   it "falls back to tag.attributes for splats" do

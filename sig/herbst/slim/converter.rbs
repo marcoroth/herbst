@@ -5,6 +5,8 @@ module Herbst
     class Converter < Herbst::Converter
       HYPHEN_ATTRIBUTES: Array[String]
 
+      ATTRIBUTE_VALUE: String
+
       @options: Hash[Symbol, untyped]
 
       # : (?Hash[Symbol, untyped]) -> void
@@ -119,8 +121,14 @@ module Herbst
       # : (String) -> Array[[String, String]]?
       def hash_entries: (String) -> Array[[ String, String ]]?
 
-      # : (String, bool, String) -> Array[Herb::AST::Node]
-      def convert_code_attribute: (String, bool, String) -> Array[Herb::AST::Node]
+      # : (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
+      def convert_code_attribute: (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
+
+      # : (String, String, String) -> Herb::AST::ERBIfNode
+      def conditional_attribute: (String, String, String) -> Herb::AST::ERBIfNode
+
+      # : (String) -> bool
+      def repeatable?: (String) -> bool
     end
   end
 end
