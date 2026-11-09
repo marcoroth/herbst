@@ -172,6 +172,15 @@ class Herbst::Haml::ConverterTest < Minitest::Spec
     assert_equal "<p>Hello <code>x</code></p>\n", to_erb("%p Hello <code>x</code>")
   end
 
+  it "converts scoped filters" do
+    assert_equal "<style scoped>\n  a { color: red; }\n</style>\n", to_erb(":scoped_css\n  a { color: red; }")
+    assert_equal "<script scoped>\n  alert(1);\n</script>\n", to_erb(":scoped_javascript\n  alert(1);")
+  end
+
+  it "keeps interpolation and indentation in scoped filters" do
+    assert_equal "<div>\n  <style scoped>\n    a { color: <%== b %>; }\n  </style>\n</div>\n", to_erb("%div\n  :scoped_css\n    a { color: \#{b}; }")
+  end
+
   it "moves content nested in a void element after it" do
     assert_equal "<br>\n  text\n\n", to_erb("%br\n  text")
   end

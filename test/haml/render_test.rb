@@ -39,6 +39,15 @@ class Herbst::Haml::RenderTest < Minitest::Spec
     assert_equal normalize(expected), normalize(actual)
   end
 
+  it "renders scoped filters like their unscoped filters with a scoped attribute" do
+    { "css" => "style", "javascript" => "script" }.each do |filter, tag|
+      expected = Haml::Template.new { ":#{filter}\n  a { color: \#{extra}; }" }.render(Scope.new).sub("<#{tag}>", "<#{tag} scoped>")
+      actual = Scope.new.instance_eval(Herb::Engine.new(Herbst::Haml.to_erb(":scoped_#{filter}\n  a { color: \#{extra}; }"), escape: true).src)
+
+      assert_equal normalize(expected), normalize(actual)
+    end
+  end
+
   private
 
   def normalize(html)
