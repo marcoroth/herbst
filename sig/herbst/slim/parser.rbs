@@ -1,0 +1,17 @@
+# Generated from lib/herbst/slim/parser.rb with RBS::Inline
+
+module Herbst
+  module Slim
+    class Parser < ::Slim::Parser
+      DIRECTIVE: Regexp
+
+      attr_reader dropped_directives: Array[[ Integer, String ]]
+
+      # : (?Hash[Symbol, untyped]) -> void
+      def initialize: (?Hash[Symbol, untyped]) -> void
+
+      # : () -> void
+      def parse_comment_block: () -> void
+    end
+  end
+end

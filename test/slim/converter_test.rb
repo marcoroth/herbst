@@ -5,6 +5,29 @@ require "test_helper"
 class Herbst::Slim::ConverterTest < Minitest::Spec
   include ConversionHelper
 
+  it "warns about herb directives in Slim comments" do
+    converter = Herbst::Slim::Converter.new
+    converter.convert("/ herb:state (count: 0)\np\n  / herb:key item.id\n/ locals: (name:)")
+
+    assert_equal [
+      "line 1: `/ herb:state (count: 0)` is a Slim comment, which is dropped when parsing. Use `-# herb:state (count: 0)` to keep the directive",
+      "line 3: `/ herb:key item.id` is a Slim comment, which is dropped when parsing. Use `-# herb:key item.id` to keep the directive",
+      "line 4: `/ locals: (name:)` is a Slim comment, which is dropped when parsing. Use `-# locals: (name:)` to keep the directive"
+    ], converter.warnings
+  end
+
+  it "does not warn about other comments or text" do
+    converter = Herbst::Slim::Converter.new
+    converter.convert("/ a note\n/! herb:state (count: 0)\n| / herb:state (count: 0)\njavascript:\n  / herb:state")
+
+    assert_empty converter.warnings
+  end
+
+  it "keeps directives written as Ruby comments" do
+    assert_equal "<%# herb:state (count: 0) %>", slim_to_erb("-# herb:state (count: 0)")
+    assert_equal "<%# locals: (name:) %>", slim_to_erb("-# locals: (name:)")
+  end
+
   it "converts tags with text" do
     assert_equal "<p>Hello</p>", slim_to_erb("p Hello")
   end

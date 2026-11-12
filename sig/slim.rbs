@@ -4,9 +4,15 @@ module Slim
   VERSION: String
 
   class Parser
+    @line: String
+
+    @lineno: Integer
+
     def initialize: (?Hash[Symbol, untyped] options) -> void
 
     def call: (String template) -> untyped
+
+    def parse_comment_block: () -> void
 
     class SyntaxError < StandardError
     end
