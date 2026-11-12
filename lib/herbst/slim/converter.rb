@@ -11,20 +11,24 @@ module Herbst
       # @rbs!
       #   type class_part = [String, Array[Herb::AST::Node]?, String]
 
+      DECLARATION = /^\s*-#\s*(?:herb:state|locals:)\s*(\(.*\))\s*$/ #: Regexp
       HYPHEN_ATTRIBUTES = ["data", "aria"].freeze #: Array[String]
       ATTRIBUTE_VALUE = "_herbst_attribute" #: String
 
       # @rbs @options: Hash[Symbol, untyped]
+      # @rbs @declared: Array[Symbol]
 
       #: (?Hash[Symbol, untyped]) -> void
       def initialize(options = {})
         super()
 
         @options = { default_tag: "div" }.merge(options)
+        @declared = []
       end
 
       #: (String) -> Herb::AST::DocumentNode
       def convert(source)
+        @declared = declared_names(source)
         parser = Parser.new(@options)
         expression = parser.call(source)
         parser.dropped_directives.each { |line, directive| warn_dropped_directive(line, directive) }
@@ -36,6 +40,17 @@ module Herbst
       end
 
       private
+
+      #: (String) -> Array[Symbol]
+      def declared_names(source)
+        source.scan(DECLARATION).flatten.flat_map do |parameters|
+          definition = Prism.parse("def declaration#{parameters}; end").value.statements.body.first
+
+          next [] unless definition.is_a?(Prism::DefNode)
+
+          definition.parameters&.keywords&.map(&:name) || []
+        end
+      end
 
       #: (Integer, String) -> void
       def warn_dropped_directive(line, directive)
@@ -519,7 +534,7 @@ module Herbst
         statements = Prism.parse(code).value.statements.body
         node = statements.first
 
-        statements.one? && (node.is_a?(Prism::InstanceVariableReadNode) || (node.is_a?(Prism::CallNode) && node.variable_call?))
+        statements.one? && (node.is_a?(Prism::InstanceVariableReadNode) || (node.is_a?(Prism::CallNode) && node.variable_call? && @declared.include?(node.name)))
       end
     end
   end
