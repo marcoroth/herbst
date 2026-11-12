@@ -8,6 +8,8 @@ module Herbst
     class Attributes
       include Builder
 
+      ATTRIBUTE_VALUE = "_herbst_attribute" #: String
+
       # @rbs @warnings: Array[String]
 
       #: (Array[String]) -> void
@@ -46,13 +48,9 @@ module Herbst
 
         case key
         when "class"
-          compile_joined(key, values, " ") do |code|
-            array_literal?(code) ? "#{code}.flatten.select(&:itself).join(\" \")" : code
-          end
+          compile_class(values)
         when "id"
-          compile_joined(key, values, "_") do |code|
-            array_literal?(code) ? "#{code}.flatten.select(&:itself).join(\"_\")" : code
-          end
+          compile_id(values)
         when "data", "aria"
           compile_hash(key, values.fetch(-1))
         else
@@ -60,23 +58,42 @@ module Herbst
         end
       end
 
-      #: (String, Array[[Symbol, untyped]], String) { (String) -> String } -> Array[Herb::AST::Node]
-      def compile_joined(key, values, separator)
-        statics = values.filter_map { |type, value| value if type == :static }
-        statics = statics.flat_map { |value| Array(value).flatten }.select(&:itself).map(&:to_s)
-        statics = statics.flat_map { |value| value.split(separator) } if separator == " "
-        dynamics = values.filter_map { |type, code| yield(code) if type == :dynamic }
-
-        return [] if statics.empty? && dynamics.empty?
-
-        children = [] #: Array[Herb::AST::Node]
-        children << literal(escape(statics.uniq.join(separator))) unless statics.empty?
-        dynamics.each do |code|
-          children << literal(separator) unless children.empty?
-          children << erb(code)
+      #: (Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
+      def compile_class(values)
+        if static?(values)
+          return [attribute("class", [literal(escape(::Haml::AttributeBuilder.build_class(false, *values.map(&:last))))])]
         end
 
-        [attribute(key, children)]
+        [attribute("class", [erb(values.one? ? single_class(values.fetch(0).last) : merged_classes(values))])]
+      end
+
+      #: (Array[[Symbol, untyped]]) -> Array[Herb::AST::Node]
+      def compile_id(values)
+        return [attribute("id", [literal(escape(::Haml::AttributeBuilder.build_id(false, *values.map(&:last))))])] if static?(values)
+
+        [attribute("id", [erb("#{ruby_list(values)}.flatten.select { |item| item }.join(\"_\")")])]
+      end
+
+      #: (String) -> String
+      def single_class(code)
+        value = ATTRIBUTE_VALUE
+
+        "(#{value} = (#{code})).is_a?(String) ? #{value} : #{value}.is_a?(Array) ? #{value}.flatten.select { |item| item }.map(&:to_s).uniq.join(\" \") : #{value} ? #{value}.to_s : \"\""
+      end
+
+      #: (Array[[Symbol, untyped]]) -> String
+      def merged_classes(values)
+        "#{ruby_list(values)}.flat_map { |value| value.is_a?(String) ? value.split(\" \") : value.is_a?(Array) ? value.flatten.select { |item| item } : value ? [value] : [] }.map(&:to_s).uniq.join(\" \")"
+      end
+
+      #: (Array[[Symbol, untyped]]) -> String
+      def ruby_list(values)
+        "[#{values.map { |type, value| type == :static ? value.inspect : "(#{value})" }.join(", ")}]"
+      end
+
+      #: (Array[[Symbol, untyped]]) -> bool
+      def static?(values)
+        values.all? { |type, _value| type == :static }
       end
 
       #: (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
@@ -109,6 +126,8 @@ module Herbst
         type, value = pair
 
         if type == :static
+          return [attribute(key, [literal(escape(value.to_s))])] unless boolean?(key) || key.start_with?("data-", "aria-")
+
           case value
           when true
             [attribute(key)]
@@ -158,11 +177,6 @@ module Herbst
       #: (String) -> bool
       def literal?(code)
         Temple::StaticAnalyzer.static?(code)
-      end
-
-      #: (String) -> bool
-      def array_literal?(code)
-        code.strip.start_with?("[")
       end
 
       #: (String) -> bool

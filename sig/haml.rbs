@@ -35,6 +35,12 @@ module Haml
     end
   end
 
+  module AttributeBuilder
+    def self.build_id: (bool escape_attrs, *untyped values) -> String
+
+    def self.build_class: (bool escape_attrs, *untyped values) -> String
+  end
+
   class AttributeParser
     def self.parse: (String text) -> Hash[String, String]?
   end
