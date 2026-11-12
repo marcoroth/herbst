@@ -109,8 +109,14 @@ module Herbst
       # : (untyped) -> Array[Herb::AST::Node]
       def convert_attributes: (untyped) -> Array[Herb::AST::Node]
 
-      # : (Array[untyped]) -> Array[Herb::AST::Node]
-      def convert_class: (Array[untyped]) -> Array[Herb::AST::Node]
+      # : (Hash[String, Array[untyped]], String, untyped) -> void
+      def collect_attribute: (Hash[String, Array[untyped]], String, untyped) -> void
+
+      # : (Hash[String, Array[untyped]], String, bool, String) -> void
+      def collect_entry: (Hash[String, Array[untyped]], String, bool, String) -> void
+
+      # : (Array[untyped], bool) -> Array[Herb::AST::Node]
+      def convert_class: (Array[untyped], bool) -> Array[Herb::AST::Node]
 
       # : (Array[class_part]) -> Herb::AST::ERBUnlessNode
       def conditional_class: (Array[class_part]) -> Herb::AST::ERBUnlessNode
@@ -118,17 +124,17 @@ module Herbst
       # : (String) -> String
       def class_condition: (String) -> String
 
-      # : (untyped) -> class_part?
-      def class_part: (untyped) -> class_part?
+      # : (untyped, bool) -> class_part?
+      def class_part: (untyped, bool) -> class_part?
 
-      # : (String, bool) -> class_part?
-      def interpolated_class_part: (String, bool) -> class_part?
+      # : (String, bool, bool) -> class_part?
+      def interpolated_class_part: (String, bool, bool) -> class_part?
 
       # : (String) -> String
       def interpolated_source: (String) -> String
 
-      # : (String, String) -> class_part?
-      def code_class_part: (String, String) -> class_part?
+      # : (String, String, bool) -> class_part?
+      def code_class_part: (String, String, bool) -> class_part?
 
       # : (String, bool) -> Array[Herb::AST::Node]
       def attribute_value: (String, bool) -> Array[Herb::AST::Node]
@@ -139,17 +145,20 @@ module Herbst
       # : (String, untyped) -> Array[Herb::AST::Node]
       def convert_attribute: (String, untyped) -> Array[Herb::AST::Node]
 
-      # : (String, bool, String) -> Array[Herb::AST::Node]
-      def convert_hash_attribute: (String, bool, String) -> Array[Herb::AST::Node]
+      # : (String, String) -> Array[Herb::AST::Node]
+      def convert_hash_fallback: (String, String) -> Array[Herb::AST::Node]
 
       # : (String) -> Array[[String, String]]?
       def hash_entries: (String) -> Array[[ String, String ]]?
 
-      # : (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
-      def convert_code_attribute: (String, bool, String, ?conditional: bool) -> Array[Herb::AST::Node]
+      # : (String, bool, String, ?entry: bool) -> Array[Herb::AST::Node]
+      def convert_code_attribute: (String, bool, String, ?entry: bool) -> Array[Herb::AST::Node]
 
-      # : (String, String, String) -> Herb::AST::ERBIfNode
-      def conditional_attribute: (String, String, String) -> Herb::AST::ERBIfNode
+      # : (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
+      def conditional_attribute: (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
+
+      # : (String, String, bool) -> String
+      def hash_expansion: (String, String, bool) -> String
 
       # : (String) -> bool
       def repeatable?: (String) -> bool
