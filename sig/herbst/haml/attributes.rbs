@@ -5,7 +5,9 @@ module Herbst
     class Attributes
       include Builder
 
-      ATTRIBUTE_VALUE: String
+      attr_writer declared: Array[Symbol]
+
+      @declared: Array[Symbol]
 
       @warnings: Array[String]
 
@@ -41,8 +43,8 @@ module Herbst
       # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
       def compile_hash: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
 
-      # : (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
-      def compile_single: (String, [ Symbol, untyped ]) -> Array[Herb::AST::Node]
+      # : (String, [Symbol, untyped], ?expansion: Symbol?) -> Array[Herb::AST::Node]
+      def compile_single: (String, [ Symbol, untyped ], ?expansion: Symbol?) -> Array[Herb::AST::Node]
 
       # : (String) -> Array[Herb::AST::Node]?
       def split_interpolation: (String) -> Array[Herb::AST::Node]?

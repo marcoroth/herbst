@@ -100,7 +100,7 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     assert_equal %(<p data-a="1" data-c="2" data-b="x"></p>), ValueScope.new({ a: 1, c: 2 }).instance_eval(Herb::Engine.new(Herbst::Slim.to_erb(source), escape: true).src)
   end
 
-  ["input disabled=value", "input disabled=value type=\"a\"", "button disabled=value checked=value x"].each do |source|
+  ["input disabled=value", "input disabled=value type=\"a\"", "button disabled=value checked=value x", "input checked=true disabled=value", "input checked=true class=value"].each do |source|
     it "renders `#{source}` like Slim" do
       [nil, false, true, "", "x"].each { |value| assert_renders_like_slim(source, value) }
     end

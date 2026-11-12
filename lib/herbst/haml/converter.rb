@@ -31,6 +31,7 @@ module Herbst
 
       #: (String) -> Herb::AST::DocumentNode
       def convert(source)
+        @attributes.declared = declared_names(source)
         root = ::Haml::Parser.new(@options).call(source)
         children = join(root.children, 0)
 

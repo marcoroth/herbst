@@ -8,13 +8,15 @@ module Herbst
     class Attributes
       include Builder
 
-      ATTRIBUTE_VALUE = "_herbst_attribute" #: String
+      attr_writer :declared #: Array[Symbol]
 
       # @rbs @warnings: Array[String]
+      # @rbs @declared: Array[Symbol]
 
       #: (Array[String]) -> void
       def initialize(warnings)
         @warnings = warnings
+        @declared = []
       end
 
       #: (::Haml::Parser::ParseNode) -> Array[Herb::AST::Node]
@@ -105,7 +107,7 @@ module Herbst
         unless hash.is_a?(Hash)
           return compile_single(prefix, [type, value]) unless type == :dynamic
 
-          return [erb("tag.attributes(#{prefix}: #{value})")]
+          return [conditional_attribute(prefix, value, true, declared: @declared, expansion: :haml)]
         end
 
         hash.sort_by { |key, _| key.to_s }.flat_map do |key, nested|
@@ -116,17 +118,17 @@ module Herbst
           if nested_value.is_a?(Hash) || (nested_type == :dynamic && ::Haml::AttributeParser.parse(nested).is_a?(Hash))
             compile_hash(name, [nested_type, nested_value])
           else
-            compile_single(name, [nested_type, nested_value])
+            compile_single(name, [nested_type, nested_value], expansion: :haml)
           end
         end
       end
 
-      #: (String, [Symbol, untyped]) -> Array[Herb::AST::Node]
-      def compile_single(key, pair)
+      #: (String, [Symbol, untyped], ?expansion: Symbol?) -> Array[Herb::AST::Node]
+      def compile_single(key, pair, expansion: nil)
         type, value = pair
 
         if type == :static
-          return [attribute(key, [literal(escape(value.to_s))])] unless boolean?(key) || key.start_with?("data-", "aria-")
+          return [attribute(key, [literal(escape(value.to_s))])] unless boolean?(key)
 
           case value
           when true
@@ -136,10 +138,12 @@ module Herbst
           else
             [attribute(key, [literal(escape(value.to_s))])]
           end
-        elsif boolean?(key)
-          [erb("#{key.inspect} if #{value}")]
         else
-          [attribute(key, split_interpolation(value) || [erb(value)])]
+          split = split_interpolation(value)
+          return [attribute(key, split)] if split
+          return [attribute(key, [erb(value)])] unless boolean?(key)
+
+          [conditional_attribute(key, value, true, declared: @declared, expansion: expansion)]
         end
       end
 
@@ -181,7 +185,7 @@ module Herbst
 
       #: (String) -> bool
       def boolean?(key)
-        ::Haml::BOOLEAN_ATTRIBUTES.include?(key)
+        ::Haml::BOOLEAN_ATTRIBUTES.include?(key) || key.start_with?("data-", "aria-") || ["data", "aria"].include?(key)
       end
 
       #: (String) -> String

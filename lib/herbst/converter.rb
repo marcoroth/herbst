@@ -5,6 +5,7 @@ module Herbst
     include Builder
 
     INDENT = "  " #: String
+    DECLARATION = /^\s*-#\s*(?:herb:state|locals:)\s*(\(.*\))\s*$/ #: Regexp
 
     # @rbs!
     #   type clause = [String, String?, Array[Herb::AST::Node], Integer?]
@@ -46,6 +47,17 @@ module Herbst
     end
 
     private
+
+    #: (String) -> Array[Symbol]
+    def declared_names(source)
+      source.scan(DECLARATION).flatten.flat_map do |parameters|
+        definition = Prism.parse("def declaration#{parameters}; end").value.statements.body.first
+
+        next [] unless definition.is_a?(Prism::DefNode)
+
+        definition.parameters&.keywords&.map(&:name) || []
+      end
+    end
 
     #: (Herb::AST::DocumentNode) -> Herb::AST::DocumentNode
     def finish(document)

@@ -6,6 +6,8 @@ module Herbst
 
     INDENT: String
 
+    DECLARATION: Regexp
+
     type clause = [ String, String?, Array[Herb::AST::Node], Integer? ]
 
     attr_reader warnings: Array[String]
@@ -25,6 +27,9 @@ module Herbst
     def warn: (Integer?, String) -> void
 
     private
+
+    # : (String) -> Array[Symbol]
+    def declared_names: (String) -> Array[Symbol]
 
     # : (Herb::AST::DocumentNode) -> Herb::AST::DocumentNode
     def finish: (Herb::AST::DocumentNode) -> Herb::AST::DocumentNode

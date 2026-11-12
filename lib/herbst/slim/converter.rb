@@ -11,9 +11,7 @@ module Herbst
       # @rbs!
       #   type class_part = [String, Array[Herb::AST::Node]?, String]
 
-      DECLARATION = /^\s*-#\s*(?:herb:state|locals:)\s*(\(.*\))\s*$/ #: Regexp
       HYPHEN_ATTRIBUTES = ["data", "aria"].freeze #: Array[String]
-      ATTRIBUTE_VALUE = "_herbst_attribute" #: String
 
       # @rbs @options: Hash[Symbol, untyped]
       # @rbs @declared: Array[Symbol]
@@ -40,17 +38,6 @@ module Herbst
       end
 
       private
-
-      #: (String) -> Array[Symbol]
-      def declared_names(source)
-        source.scan(DECLARATION).flatten.flat_map do |parameters|
-          definition = Prism.parse("def declaration#{parameters}; end").value.statements.body.first
-
-          next [] unless definition.is_a?(Prism::DefNode)
-
-          definition.parameters&.keywords&.map(&:name) || []
-        end
-      end
 
       #: (Integer, String) -> void
       def warn_dropped_directive(line, directive)
@@ -527,46 +514,8 @@ module Herbst
             return [attribute(name, [literal(escape ? CGI.escapeHTML(value.to_s) : value.to_s)])]
           end
 
-          [conditional_attribute(name, code, escape, expand: entry || HYPHEN_ATTRIBUTES.include?(name), always: entry)]
+          [conditional_attribute(name, code, escape, declared: @declared, expansion: entry || HYPHEN_ATTRIBUTES.include?(name) ? :slim : nil, always: entry)]
         end
-      end
-
-      #: (String, String, bool, expand: bool, always: bool) -> Herb::AST::ERBIfNode
-      def conditional_attribute(name, code, escape, expand:, always:)
-        repeatable = repeatable?(code)
-        value = repeatable ? code : ATTRIBUTE_VALUE
-        bound = repeatable ? code : "(#{ATTRIBUTE_VALUE} = #{code})"
-        valued = [whitespace, attribute(name, [erb(value, opening: escape ? "<%=" : "<%==")])]
-        bare = [whitespace, attribute(name)]
-        present = always ? erb_else(valued) : erb_if("elsif #{value}", valued, end_node: nil)
-
-        return erb_if("if #{bound} == true", bare, subsequent: present) unless expand
-
-        expansion = erb(hash_expansion(name, value, escape), opening: "<%==") #: Herb::AST::ERBContentNode
-
-        erb_if(
-          "if #{bound}.is_a?(Hash)",
-          [whitespace, attribute(expansion)],
-          subsequent: erb_if("elsif #{value} == true", bare, subsequent: present, end_node: nil)
-        )
-      end
-
-      #: (String, String, bool) -> String
-      def hash_expansion(name, value, escape)
-        output = escape ? "ERB::Util.html_escape(value)" : "value"
-        expansion = "(_herbst_expand = ->(name, value) { value.is_a?(Hash) ? value.flat_map { |key, nested| _herbst_expand.call(\"\#{name}-\#{key}\", nested) } : [[name, value]] })"
-        rendered = "value == true ? name : \"\#{name}=\\\"\#{#{output}}\\\"\""
-        joined = "#{expansion}.call(#{name.inspect}, #{value}).sort_by(&:first).map { |name, value| #{rendered} }.join(\" \")"
-
-        escape ? "(require \"erb\"; #{joined})" : joined
-      end
-
-      #: (String) -> bool
-      def repeatable?(code)
-        statements = Prism.parse(code).value.statements.body
-        node = statements.first
-
-        statements.one? && (node.is_a?(Prism::InstanceVariableReadNode) || (node.is_a?(Prism::CallNode) && node.variable_call? && @declared.include?(node.name)))
       end
     end
   end
