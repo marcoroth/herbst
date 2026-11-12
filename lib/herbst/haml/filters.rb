@@ -25,6 +25,10 @@ module Herbst
           element("script", body: wrapped(source, depth))
         when "css"
           element("style", body: wrapped(source, depth))
+        when "scoped_javascript"
+          element("script", attributes: [attribute("scoped")], body: wrapped(source, depth))
+        when "scoped_css"
+          element("style", attributes: [attribute("scoped")], body: wrapped(source, depth))
         when "plain", "preserve"
           text_nodes(source)
         when "escaped"
