@@ -74,6 +74,15 @@ class Herbst::Haml::RenderTest < Minitest::Spec
     end
   end
 
+  [
+    "%p(title)", "%p{data: \"x\"}", "%p{data: {a: 1}}{data: {b: value}}", "%p{\"foo\": value, \"bar\": value}", "%p{title: \"a\#{value}\"}",
+    "%a{href: value, class: \"b\"}", "%p{title: value, \"data-x\": 1}", "%p= value", "= value", "!= value", "%p \#{value}", "~ value", "&= value", "%p! \#{value}"
+  ].each do |source|
+    it "renders `#{source}` like Haml" do
+      [nil, false, true, "", "x", "a<b", ["a", nil], { z: 1, a_b: "<" }].each { |value| assert_renders_like_haml(source, value) }
+    end
+  end
+
   private
 
   def assert_renders_like_haml(source, value)

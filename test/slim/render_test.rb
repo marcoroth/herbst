@@ -106,6 +106,12 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     end
   end
 
+  ["p title=(value)", "p id=value class=value", "p title=1", "p data={a: 1}", "p data=\"x\" class=[value, nil]", "p = value", "p == value", "p Hi \#{value}"].each do |source|
+    it "renders `#{source}` like Slim" do
+      [nil, false, true, "", "x", "a<b", ["a", nil], { z: 1 }].each { |value| assert_renders_like_slim(source, value) }
+    end
+  end
+
   it "evaluates attribute code once like Slim" do
     ["p title=values.shift", "p title=shift_value"].each do |source|
       expected = Slim::Template.new(format: :html) { source }.render(ValueScope.new([nil, "b"]))
