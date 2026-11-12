@@ -8,6 +8,9 @@ require "temple"
 module Herbst
   module Slim
     class Converter < Herbst::Converter
+      # @rbs!
+      #   type class_part = [String, Array[Herb::AST::Node]?, String]
+
       HYPHEN_ATTRIBUTES = ["data", "aria"].freeze #: Array[String]
       ATTRIBUTE_VALUE = "_herbst_attribute" #: String
 
@@ -333,32 +336,74 @@ module Herbst
 
       #: (Array[untyped]) -> Array[Herb::AST::Node]
       def convert_class(values)
-        parts = values.filter_map do |value|
-          nodes = class_value(value)
-          nodes unless nodes.empty?
+        parts = values.filter_map { |value| class_part(value) }
+        return [] if parts.empty?
+        return [conditional_class(parts)] unless parts.first&.fetch(1)
+
+        children = parts.flat_map.with_index do |(ruby, nodes, opening), index|
+          next [index.zero? ? nil : literal(" "), *nodes].compact if nodes
+
+          [erb_unless(class_condition(ruby), [literal(" "), erb(ATTRIBUTE_VALUE, opening: opening)])]
         end
 
-        return [] if parts.empty?
-
-        [attribute("class", parts.flat_map.with_index { |nodes, index| index.zero? ? nodes : [literal(" "), *nodes] })]
+        [attribute("class", children)]
       end
 
-      #: (untyped) -> Array[Herb::AST::Node]
-      def class_value(value)
+      #: (Array[class_part]) -> Herb::AST::ERBUnlessNode
+      def conditional_class(parts)
+        rubies = parts.map(&:first)
+        ruby = rubies.one? ? rubies.fetch(0) : "[#{rubies.join(", ")}].reject(&:empty?).join(\" \")"
+        opening = parts.any? { |part| part[2] == "<%=" } ? "<%=" : "<%=="
+
+        erb_unless(class_condition(ruby), [whitespace, attribute("class", [erb(ATTRIBUTE_VALUE, opening: opening)])])
+      end
+
+      #: (String) -> String
+      def class_condition(ruby)
+        "unless (#{ATTRIBUTE_VALUE} = #{ruby}).empty?"
+      end
+
+      #: (untyped) -> class_part?
+      def class_part(value)
         case value[0]
         when :static
-          value[1].to_s.empty? ? [] : [literal(value[1].to_s)]
+          text = value[1].to_s
+          [text.inspect, [literal(text)], "<%="] unless text.empty?
         when :escape
-          attribute_value(value[2][2], value[1])
+          interpolated_class_part(value[2][2], value[1])
         when :slim
-          _slim, _attrvalue, escape, code = value
-          return [literal(static_class(code))] if Temple::StaticAnalyzer.static?(code)
-
-          code = "#{code}.flatten.map(&:to_s).reject(&:empty?).join(\" \")" if code.strip.start_with?("[")
-          [erb(code, opening: escape ? "<%=" : "<%==")]
-        else
-          []
+          code_class_part(value[3], value[2] ? "<%=" : "<%==")
         end
+      end
+
+      #: (String, bool) -> class_part?
+      def interpolated_class_part(string, escape)
+        nodes = attribute_value(string, escape)
+        return nil if nodes.empty?
+
+        [interpolated_source(string), nodes.any?(Herb::AST::LiteralNode) ? nodes : nil, escape ? "<%=" : "<%=="]
+      end
+
+      #: (String) -> String
+      def interpolated_source(string)
+        parts = flatten(::Slim::Interpolation.new.call([:slim, :interpolate, string]))
+
+        "\"#{parts.map { |part| part[0] == :static ? part[1].inspect[1..-2] : "\#{#{part[3]}}" }.join}\""
+      end
+
+      #: (String, String) -> class_part?
+      def code_class_part(code, opening)
+        if Temple::StaticAnalyzer.static?(code)
+          text = static_class(code)
+
+          return nil if text.empty?
+
+          return [text.inspect, [literal(opening == "<%=" ? CGI.escapeHTML(text) : text)], opening]
+        end
+
+        list = code.strip.start_with?("[") ? code : "[#{code}]"
+
+        ["#{list}.flatten.map(&:to_s).reject(&:empty?).join(\" \")", nil, opening]
       end
 
       #: (String, bool) -> Array[Herb::AST::Node]
@@ -373,7 +418,7 @@ module Herbst
         value = eval(code) # rubocop:disable Security/Eval
         value = Array(value).flatten.map(&:to_s).reject(&:empty?).join(" ") if value.is_a?(Array)
 
-        CGI.escapeHTML(value.to_s)
+        value.to_s
       end
 
       #: (String, untyped) -> Array[Herb::AST::Node]
