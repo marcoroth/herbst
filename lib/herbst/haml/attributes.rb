@@ -120,7 +120,30 @@ module Herbst
         elsif boolean?(key)
           [erb("#{key.inspect} if #{value}")]
         else
-          [attribute(key, [erb(value)])]
+          [attribute(key, split_interpolation(value) || [erb(value)])]
+        end
+      end
+
+      #: (String) -> Array[Herb::AST::Node]?
+      def split_interpolation(code)
+        result = Prism.parse(code)
+        statements = result.value.statements.body
+        string = statements.first
+
+        return nil unless result.success? && statements.one? && string.is_a?(Prism::InterpolatedStringNode) && string.opening == "\""
+
+        string.parts.map do |part|
+          case part
+          when Prism::StringNode
+            literal(escape(part.unescaped))
+          when Prism::EmbeddedStatementsNode
+            body = part.statements&.body
+            return nil unless body&.one?
+
+            erb(body.first.slice)
+          else
+            return nil
+          end
         end
       end
 
