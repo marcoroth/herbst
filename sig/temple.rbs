@@ -8,6 +8,14 @@ module Temple
     def self.static?: (String code) -> bool
   end
 
+  module Filters
+    class RemoveBOM
+      def initialize: (?Hash[Symbol, untyped] options) -> void
+
+      def call: (String s) -> String
+    end
+  end
+
   module HTML
     class Fast
       def initialize: (?Hash[Symbol, untyped] options) -> void

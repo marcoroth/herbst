@@ -5,7 +5,13 @@ module Herbst
     class Parser < ::Slim::Parser
       DIRECTIVE: Regexp
 
+      # Rails reads strict locals from the template source, so a Slim comment like `/# locals: (...)`
+      # declares them. Like Rails, the locals can continue on the following lines.
+      STRICT_LOCALS: Regexp
+
       attr_reader dropped_directives: Array[[ Integer, String ]]
+
+      attr_reader strict_locals: String?
 
       # : (?Hash[Symbol, untyped]) -> void
       def initialize: (?Hash[Symbol, untyped]) -> void

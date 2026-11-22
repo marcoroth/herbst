@@ -8,6 +8,8 @@ module Slim
 
     @lineno: Integer
 
+    @lines: Array[String]
+
     def initialize: (?Hash[Symbol, untyped] options) -> void
 
     def call: (String template) -> untyped

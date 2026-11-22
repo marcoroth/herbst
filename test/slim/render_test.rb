@@ -64,6 +64,10 @@ class Herbst::Slim::RenderTest < Minitest::Spec
     end
   end
 
+  it "renders class code that starts like an Array literal but isn't one like Slim" do
+    [nil, "x", ["a", nil]].each { |value| assert_renders_like_slim(%(p class=[value, "c"].flatten.compact.join(" ")), value) }
+  end
+
   ["p class=(\"a&b\")", "p class==(\"a&b\")", "p.c class==(\"a&b\")", "p.c class=(\"a&b\")"].each do |source|
     it "renders the static class `#{source}` like Slim" do
       assert_renders_like_slim(source, nil)

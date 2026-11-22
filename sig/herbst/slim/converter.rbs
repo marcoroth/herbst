@@ -77,6 +77,18 @@ module Herbst
       # : (String, untyped, Array[untyped], Integer) -> Array[Herb::AST::Node]
       def convert_control: (String, untyped, Array[untyped], Integer) -> Array[Herb::AST::Node]
 
+      # Erubi compiles text between `<% case %>` and the first `<% when %>` into the `case`, which is a
+      # syntax error, so no text follows the `case` tag.
+      #
+      # : (String, Array[Herb::AST::Node], Array[Herbst::Converter::clause], Integer, Integer?) -> Herb::AST::ERBCaseNode
+      def control_case: (String, Array[Herb::AST::Node], Array[Herbst::Converter::clause], Integer, Integer?) -> Herb::AST::ERBCaseNode
+
+      # Slim accepts the first clause on the `- case` line, as in `- case value when 1`. The lines indented
+      # under it are that clause's body, so they move into a clause of their own.
+      #
+      # : (String, untyped, Array[untyped]) -> [String, untyped, Array[untyped]]
+      def inline_clause: (String, untyped, Array[untyped]) -> [ String, untyped, Array[untyped] ]
+
       # Slim also accepts the `- when` lines of a `- case` indented under it.
       #
       # : (untyped) -> [untyped, Array[untyped]]

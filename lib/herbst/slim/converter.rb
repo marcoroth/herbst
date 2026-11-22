@@ -28,11 +28,14 @@ module Herbst
 
       #: (String) -> Herb::AST::DocumentNode
       def convert(source)
-        @declared = declared_names(source)
+        source = Temple::Filters::RemoveBOM.new.call(source)
         parser = Parser.new(@options)
         expression = parser.call(source)
+        strict_locals = parser.strict_locals
+        @declared = declared_names(strict_locals ? "-# #{strict_locals}\n#{source}" : source)
         parser.dropped_directives.each { |line, directive| warn_dropped_directive(line, directive) }
         children = join(prepare([expression]), 0)
+        children.unshift(erb_comment(strict_locals), text("\n")) if strict_locals
 
         finish(document(children))
       rescue ::Slim::Parser::SyntaxError => e
@@ -235,7 +238,12 @@ module Herbst
         opening = escape ? "<%=" : "<%=="
         children = body(content, depth)
 
-        return [*comment_nodes(comment), erb(code, opening: opening)] if children.empty? && !opens_block?(code)
+        if children.empty? && !opens_block?(code)
+          # Slim closes `= if` with an `end` even without content, and the `if` returns nil.
+          return convert_control(item[3], content, [], depth) if code.match?(::Slim::EndInserter::IF_RE)
+
+          return [*comment_nodes(comment), erb(code, opening: opening)]
+        end
 
         [*comment_nodes(comment), erb_block(block_code(code), children, opening: opening)]
       end
@@ -246,6 +254,7 @@ module Herbst
         return comment_nodes(comment) if code.empty?
 
         content, clause_items = nested_clauses(content) if keyword(code) == "case" && clause_items.empty?
+        code, content, clause_items = inline_clause(code, content, clause_items) if keyword(code) == "case"
 
         children = body(content, depth)
         return [*comment_nodes(comment), erb(code, opening: "<%")] if children.empty? && clause_items.empty? && !code.match?(::Slim::EndInserter::IF_RE)
@@ -256,6 +265,29 @@ module Herbst
         end
 
         [*comment_nodes(comment), control(block_code(code), keyword(code), children, clauses, depth)]
+      end
+
+      # Erubi compiles text between `<% case %>` and the first `<% when %>` into the `case`, which is a
+      # syntax error, so no text follows the `case` tag.
+      #
+      #: (String, Array[Herb::AST::Node], Array[Herbst::Converter::clause], Integer, Integer?) -> Herb::AST::ERBCaseNode
+      def control_case(code, body, clauses, depth, line)
+        super.tap { |node| node.children.reject! { |child| child.is_a?(Herb::AST::HTMLTextNode) } }
+      end
+
+      # Slim accepts the first clause on the `- case` line, as in `- case value when 1`. The lines indented
+      # under it are that clause's body, so they move into a clause of their own.
+      #
+      #: (String, untyped, Array[untyped]) -> [String, untyped, Array[untyped]]
+      def inline_clause(code, content, clause_items)
+        node = Prism.parse("#{code}\nend").value.statements.body.first
+        return [code, content, clause_items] unless node.is_a?(Prism::CaseNode) || node.is_a?(Prism::CaseMatchNode)
+
+        first = node.conditions.first
+        return [code, content, clause_items] unless first
+
+        offset = first.location.start_offset
+        [code.byteslice(0, offset).to_s.rstrip, [:multi], [[:slim, :control, code.byteslice(offset, code.bytesize).to_s, content], *clause_items]]
       end
 
       # Slim also accepts the `- when` lines of a `- case` indented under it.
@@ -442,7 +474,8 @@ module Herbst
 
         return ["[#{code}].join(\" \")", nil, opening] if builder
 
-        list = code.strip.start_with?("[") ? code : "[#{code}]"
+        # Code that isn't an Array literal may or may not return an Array, so it's wrapped in one.
+        list = Prism.parse(code).value.statements.body.first.is_a?(Prism::ArrayNode) ? code : "[#{code}]"
 
         ["#{list}.flatten.map(&:to_s).reject(&:empty?).join(\" \")", nil, opening]
       end
